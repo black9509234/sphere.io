@@ -1,452 +1,955 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>💬 채팅방</title>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>sphere.io</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#07090d;--surface:#0d1018;--surface2:#131720;--border:#1a2235;
+  --text:#c8dff5;--dim:#3a5470;--accent:#00c8f0;--danger:#ff4455;
+  --heal:#3dffaa;--mp:#8866ff;--gold:#ffc844;--sys:#ff9944;
+}
+body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);height:100dvh;overflow:hidden;display:flex;flex-direction:column;}
 
-    :root {
-      --bg: #0d0f14;
-      --surface: #161920;
-      --surface2: #1e222d;
-      --border: #2a2f3e;
-      --accent: #7c6af7;
-      --accent2: #4ecdc4;
-      --text: #e8eaf0;
-      --text-dim: #6b7280;
-      --system: #f59e0b;
-      --me-bg: linear-gradient(135deg, #7c6af7, #9f7aea);
-      --other-bg: #1e222d;
-      --radius: 16px;
-    }
+/* ══ AUTH SCREEN ══ */
+#auth-screen{
+  position:fixed;inset:0;z-index:200;
+  display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(ellipse 80% 60% at 50% 50%,#0a1628,#07090d);
+}
+.auth-card{
+  width:min(420px,92vw);
+  background:var(--surface);
+  border:1px solid var(--border);
+  padding:44px 36px;
+  clip-path:polygon(0 0,calc(100% - 18px) 0,100% 18px,100% 100%,18px 100%,0 calc(100% - 18px));
+  display:flex;flex-direction:column;gap:24px;
+}
+.auth-logo{text-align:center;}
+.auth-logo svg{animation:spin 12s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.logo-title{font-family:'Rajdhani',sans-serif;font-size:40px;font-weight:700;letter-spacing:6px;color:#fff;text-shadow:0 0 24px var(--accent);}
+.logo-title span{color:var(--accent);}
+.logo-sub{font-size:11px;color:var(--dim);letter-spacing:3px;text-transform:uppercase;margin-top:4px;}
+.auth-tabs{display:flex;gap:0;border:1px solid var(--border);border-radius:2px;overflow:hidden;}
+.auth-tab{flex:1;padding:10px;font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:600;letter-spacing:2px;text-transform:uppercase;background:transparent;border:none;color:var(--dim);cursor:pointer;transition:all 0.2s;}
+.auth-tab.active{background:var(--accent);color:#000;}
+.auth-input{
+  background:var(--surface2);border:1px solid var(--border);border-radius:2px;
+  padding:13px 16px;font-size:14px;color:var(--text);
+  font-family:'Noto Sans KR',sans-serif;outline:none;transition:border-color 0.2s;
+}
+.auth-input:focus{border-color:var(--accent);}
+.auth-input::placeholder{color:var(--dim);}
+.auth-btn{
+  background:transparent;border:1.5px solid var(--accent);color:var(--accent);
+  border-radius:2px;padding:13px;font-size:14px;font-weight:600;
+  font-family:'Rajdhani',sans-serif;letter-spacing:3px;text-transform:uppercase;
+  cursor:pointer;transition:all 0.2s;
+}
+.auth-btn:hover{background:var(--accent);color:#000;}
+.auth-error{font-size:12px;color:var(--danger);text-align:center;min-height:16px;}
 
-    body {
-      font-family: 'Noto Sans KR', sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      height: 100dvh;
-      display: flex;
-      overflow: hidden;
-    }
+/* ══ GAME SCREEN ══ */
+#game-screen{display:none;flex:1;flex-direction:column;overflow:hidden;}
 
-    /* ─── 닉네임 입력 화면 ─── */
-    #login-screen {
-      position: fixed; inset: 0;
-      background: var(--bg);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 100;
-      flex-direction: column;
-      gap: 8px;
-    }
-    .login-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 24px;
-      padding: 48px 40px;
-      width: min(420px, 90vw);
-      display: flex;
-      flex-direction: column;
-      gap: 24px;
-      box-shadow: 0 32px 80px rgba(0,0,0,0.5);
-    }
-    .login-title {
-      font-size: 28px;
-      font-weight: 700;
-      letter-spacing: -0.5px;
-    }
-    .login-title span { color: var(--accent); }
-    .login-sub {
-      color: var(--text-dim);
-      font-size: 14px;
-      margin-top: -16px;
-    }
-    .login-input {
-      background: var(--surface2);
-      border: 1.5px solid var(--border);
-      border-radius: 12px;
-      padding: 14px 18px;
-      font-size: 16px;
-      color: var(--text);
-      font-family: inherit;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-    .login-input:focus { border-color: var(--accent); }
-    .login-btn {
-      background: var(--accent);
-      color: #fff;
-      border: none;
-      border-radius: 12px;
-      padding: 14px;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      font-family: inherit;
-      transition: opacity 0.2s, transform 0.1s;
-    }
-    .login-btn:hover { opacity: 0.88; transform: translateY(-1px); }
-    .login-btn:active { transform: translateY(0); }
+/* 헤더 HUD */
+#hud{
+  background:var(--surface);border-bottom:1px solid var(--border);
+  padding:8px 16px;display:flex;align-items:center;gap:14px;flex-shrink:0;
+  height:52px;
+}
+.hud-logo{font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:700;letter-spacing:4px;color:var(--accent);}
+.hud-shape{width:28px;height:28px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.hud-info{display:flex;flex-direction:column;gap:1px;}
+.hud-name{font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:600;line-height:1;}
+.hud-class{font-size:10px;color:var(--dim);}
+.hud-bars{display:flex;flex-direction:column;gap:3px;min-width:130px;}
+.hud-bar{display:flex;align-items:center;gap:5px;font-size:10px;}
+.hud-bar-label{width:16px;color:var(--dim);}
+.hud-track{flex:1;height:5px;background:rgba(255,255,255,0.06);border-radius:1px;overflow:hidden;}
+.hud-fill{height:100%;border-radius:1px;transition:width 0.3s;}
+.hp-fill{background:linear-gradient(90deg,#ff4455,#ff7788);}
+.mp-fill{background:linear-gradient(90deg,#6644ff,#8866ff);}
+.hud-val{font-size:9px;color:var(--dim);min-width:44px;}
+.hud-stats{display:flex;gap:8px;}
+.hud-stat{font-family:'Rajdhani',sans-serif;font-size:12px;color:var(--dim);}
+.hud-stat span{color:var(--text);}
+.hud-gold{font-family:'Rajdhani',sans-serif;font-size:13px;color:var(--gold);margin-left:auto;}
 
-    /* ─── 사이드바 (사용자 목록) ─── */
-    #sidebar {
-      width: 220px;
-      background: var(--surface);
-      border-right: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      padding: 24px 16px;
-      gap: 16px;
-      flex-shrink: 0;
-    }
-    .sidebar-title {
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 1.5px;
-      color: var(--text-dim);
-      text-transform: uppercase;
-      padding: 0 4px;
-    }
-    #user-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
-    #user-list li {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 8px 10px;
-      border-radius: 10px;
-      font-size: 14px;
-      font-weight: 500;
-      transition: background 0.15s;
-    }
-    #user-list li:hover { background: var(--surface2); }
-    .user-dot {
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      background: var(--accent2);
-      flex-shrink: 0;
-      box-shadow: 0 0 6px var(--accent2);
-    }
-    .online-count {
-      font-family: 'Space Mono', monospace;
-      font-size: 12px;
-      color: var(--accent2);
-      padding: 0 4px;
-    }
+/* 메인 레이아웃 */
+#main{flex:1;display:flex;overflow:hidden;}
 
-    /* ─── 메인 채팅 ─── */
-    #chat-main {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      min-width: 0;
-    }
+/* 맵 영역 */
+#map-wrap{flex:1;position:relative;overflow:hidden;background:var(--bg);cursor:crosshair;}
+#map-canvas{display:block;}
 
-    /* 헤더 */
-    #chat-header {
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      padding: 16px 24px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    .header-icon { font-size: 24px; }
-    .header-info { flex: 1; }
-    .header-title { font-size: 17px; font-weight: 700; }
-    .header-sub { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+/* 전투 오버레이 */
+#combat-overlay{
+  position:absolute;bottom:16px;left:50%;transform:translateX(-50%);
+  display:none;flex-direction:column;align-items:center;gap:10px;
+  pointer-events:auto;
+}
+.combat-target{
+  background:rgba(13,16,24,0.92);border:1px solid var(--border);
+  padding:10px 20px;border-radius:2px;
+  display:flex;flex-direction:column;gap:6px;align-items:center;
+  min-width:200px;
+}
+.ct-name{font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:600;}
+.ct-hpbar{width:180px;height:7px;background:rgba(255,255,255,0.07);border-radius:1px;overflow:hidden;}
+.ct-hpfill{height:100%;background:linear-gradient(90deg,#ff4455,#ff6644);transition:width 0.3s;}
+.ct-hptext{font-size:11px;color:var(--dim);}
+.combat-btns{display:flex;gap:8px;}
+.cbtn{
+  background:var(--surface);border:1.5px solid var(--border);color:var(--text);
+  border-radius:2px;padding:8px 16px;
+  font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:600;letter-spacing:1px;
+  cursor:pointer;transition:all 0.15s;
+}
+.cbtn:hover{transform:translateY(-1px);}
+.cbtn-atk{border-color:var(--danger);color:var(--danger);}
+.cbtn-atk:hover{background:var(--danger);color:#fff;}
+.cbtn-skl{border-color:var(--mp);color:var(--mp);}
+.cbtn-skl:hover{background:var(--mp);color:#fff;}
+.cbtn-heal{border-color:var(--heal);color:var(--heal);}
+.cbtn-heal:hover{background:var(--heal);color:#000;}
 
-    /* 메시지 영역 */
-    #messages {
-      flex: 1;
-      overflow-y: auto;
-      padding: 24px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      scroll-behavior: smooth;
-    }
-    #messages::-webkit-scrollbar { width: 4px; }
-    #messages::-webkit-scrollbar-track { background: transparent; }
-    #messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+/* 오른쪽 패널 */
+#right-panel{
+  width:220px;flex-shrink:0;
+  background:var(--surface);border-left:1px solid var(--border);
+  display:flex;flex-direction:column;overflow:hidden;
+}
+.panel-tab{
+  display:flex;border-bottom:1px solid var(--border);
+}
+.ptab{
+  flex:1;padding:9px;font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:600;
+  letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);
+  background:transparent;border:none;cursor:pointer;transition:all 0.2s;border-bottom:2px solid transparent;
+}
+.ptab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.panel-content{flex:1;overflow-y:auto;display:none;}
+.panel-content.active{display:flex;flex-direction:column;}
+.panel-content::-webkit-scrollbar{width:2px;}
+.panel-content::-webkit-scrollbar-thumb{background:var(--border);}
 
-    /* 메시지 버블 */
-    .msg-wrapper {
-      display: flex;
-      flex-direction: column;
-      max-width: 72%;
-      animation: slideIn 0.2s ease;
-    }
-    @keyframes slideIn {
-      from { opacity: 0; transform: translateY(8px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    .msg-wrapper.mine { align-self: flex-end; align-items: flex-end; }
-    .msg-wrapper.other { align-self: flex-start; }
+/* 플레이어 목록 */
+#tab-players{padding:8px;gap:4px;}
+.player-row{
+  padding:9px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:2px;
+  display:flex;flex-direction:column;gap:5px;
+}
+.player-row.is-me{border-color:rgba(0,200,240,0.25);}
+.pr-top{display:flex;align-items:center;gap:7px;}
+.pr-shape{width:22px;height:22px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.pr-nick{font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.pr-lv{font-size:10px;color:var(--dim);}
+.pr-hpbar{height:3px;background:rgba(255,255,255,0.06);border-radius:1px;overflow:hidden;}
+.pr-hpfill{height:100%;background:linear-gradient(90deg,#ff4455,#ff7788);transition:width 0.3s;}
 
-    .msg-meta {
-      font-size: 11px;
-      color: var(--text-dim);
-      margin-bottom: 4px;
-      padding: 0 4px;
-    }
-    .msg-bubble {
-      padding: 11px 16px;
-      border-radius: var(--radius);
-      font-size: 14.5px;
-      line-height: 1.55;
-      word-break: break-word;
-    }
-    .mine .msg-bubble {
-      background: var(--me-bg);
-      color: #fff;
-      border-bottom-right-radius: 4px;
-    }
-    .other .msg-bubble {
-      background: var(--other-bg);
-      border: 1px solid var(--border);
-      border-bottom-left-radius: 4px;
-    }
-    .msg-time {
-      font-size: 10px;
-      color: var(--text-dim);
-      margin-top: 4px;
-      padding: 0 4px;
-    }
+/* 채팅 */
+#tab-chat{flex-direction:column;}
+#messages{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:6px;scroll-behavior:smooth;}
+#messages::-webkit-scrollbar{width:2px;}
+#messages::-webkit-scrollbar-thumb{background:var(--border);}
+.chat-msg{font-size:12px;line-height:1.5;word-break:break-all;}
+.chat-nick{font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:600;}
+.chat-sys{font-size:11px;color:var(--sys);padding:3px 6px;background:rgba(255,153,68,0.05);border-radius:2px;text-align:center;}
+#chat-input-wrap{
+  border-top:1px solid var(--border);padding:8px;display:flex;gap:6px;flex-shrink:0;
+}
+#chat-input{
+  flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:2px;
+  padding:7px 10px;font-size:12px;color:var(--text);
+  font-family:'Noto Sans KR',sans-serif;outline:none;
+}
+#chat-input:focus{border-color:var(--accent);}
+#chat-send{
+  background:transparent;border:1px solid var(--accent);color:var(--accent);
+  border-radius:2px;width:30px;height:30px;cursor:pointer;font-size:14px;
+  display:flex;align-items:center;justify-content:center;transition:all 0.2s;flex-shrink:0;
+}
+#chat-send:hover{background:var(--accent);color:#000;}
 
-    /* 시스템 메시지 */
-    .system-msg {
-      align-self: center;
-      background: rgba(245, 158, 11, 0.1);
-      border: 1px solid rgba(245, 158, 11, 0.25);
-      color: var(--system);
-      font-size: 12px;
-      padding: 6px 14px;
-      border-radius: 20px;
-      animation: slideIn 0.2s ease;
-    }
+/* 직업 선택 모달 */
+#class-modal{
+  display:none;position:fixed;inset:0;z-index:300;
+  background:rgba(0,0,0,0.75);backdrop-filter:blur(4px);
+  align-items:center;justify-content:center;
+}
+#class-modal.show{display:flex;}
+.class-modal-card{
+  background:var(--surface);border:1px solid var(--border);
+  padding:36px 32px;width:min(480px,92vw);
+  display:flex;flex-direction:column;gap:20px;
+  clip-path:polygon(0 0,calc(100% - 18px) 0,100% 18px,100% 100%,18px 100%,0 calc(100% - 18px));
+}
+.cm-title{font-family:'Rajdhani',sans-serif;font-size:22px;font-weight:700;color:var(--gold);letter-spacing:2px;}
+.cm-sub{font-size:12px;color:var(--dim);}
+.cm-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+.cm-card{
+  background:var(--surface2);border:1.5px solid var(--border);border-radius:2px;
+  padding:14px 10px;cursor:pointer;transition:all 0.2s;
+  display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;
+}
+.cm-card:hover{transform:translateY(-2px);}
+.cm-shape{width:44px;height:44px;display:flex;align-items:center;justify-content:center;}
+.cm-name{font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:600;}
+.cm-cond{font-size:10px;color:var(--dim);line-height:1.4;}
+.cm-close{background:transparent;border:1px solid var(--border);color:var(--dim);border-radius:2px;padding:8px;font-size:12px;cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:1px;}
+.cm-close:hover{border-color:var(--danger);color:var(--danger);}
 
-    /* 타이핑 표시 */
-    #typing-indicator {
-      height: 24px;
-      padding: 0 24px;
-      font-size: 12px;
-      color: var(--text-dim);
-      font-style: italic;
-    }
+/* 데미지 팝업 */
+.dmg-float{
+  position:fixed;font-family:'Rajdhani',sans-serif;font-size:20px;font-weight:700;
+  pointer-events:none;z-index:400;
+  animation:dfloat 1s ease-out forwards;
+}
+@keyframes dfloat{from{opacity:1;transform:translateY(0) scale(1);}to{opacity:0;transform:translateY(-50px) scale(1.2);}}
 
-    /* 입력창 */
-    #input-area {
-      background: var(--surface);
-      border-top: 1px solid var(--border);
-      padding: 16px 24px;
-      display: flex;
-      gap: 12px;
-      align-items: flex-end;
-    }
-    #message-input {
-      flex: 1;
-      background: var(--surface2);
-      border: 1.5px solid var(--border);
-      border-radius: 14px;
-      padding: 12px 16px;
-      font-size: 14.5px;
-      color: var(--text);
-      font-family: inherit;
-      outline: none;
-      resize: none;
-      min-height: 46px;
-      max-height: 120px;
-      line-height: 1.5;
-      transition: border-color 0.2s;
-    }
-    #message-input:focus { border-color: var(--accent); }
-    #message-input::placeholder { color: var(--text-dim); }
-    #send-btn {
-      background: var(--accent);
-      color: #fff;
-      border: none;
-      border-radius: 12px;
-      width: 46px;
-      height: 46px;
-      cursor: pointer;
-      font-size: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      transition: opacity 0.2s, transform 0.1s;
-    }
-    #send-btn:hover { opacity: 0.85; transform: scale(1.05); }
-    #send-btn:active { transform: scale(0.97); }
+/* 레벨업 */
+#levelup-pop{
+  display:none;position:fixed;top:50%;left:50%;
+  transform:translate(-50%,-50%) scale(0);
+  background:var(--surface);border:2px solid var(--gold);
+  padding:28px 48px;text-align:center;z-index:500;
+  transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  box-shadow:0 0 60px rgba(255,200,68,0.3);
+}
+#levelup-pop.show{display:block;transform:translate(-50%,-50%) scale(1);}
+.lup-t{font-family:'Rajdhani',sans-serif;font-size:14px;letter-spacing:4px;color:var(--gold);}
+.lup-n{font-family:'Rajdhani',sans-serif;font-size:60px;font-weight:700;color:#fff;line-height:1;}
+.lup-evo{font-size:13px;color:var(--accent);margin-top:6px;}
 
-    @media (max-width: 600px) {
-      #sidebar { display: none; }
-    }
-  </style>
+/* 미니맵 */
+#minimap{
+  position:absolute;bottom:16px;right:16px;
+  width:120px;height:90px;
+  background:rgba(13,16,24,0.85);
+  border:1px solid var(--border);
+  border-radius:2px;
+  overflow:hidden;
+}
+#minimap-canvas{display:block;}
+</style>
 </head>
 <body>
 
-<!-- 닉네임 입력 화면 -->
-<div id="login-screen">
-  <div class="login-card">
-    <div>
-      <div class="login-title">💬 <span>채팅방</span>에<br>오신 걸 환영해요!</div>
-      <p class="login-sub" style="margin-top:10px">닉네임을 입력하고 채팅을 시작하세요</p>
+<!-- ══ AUTH ══ -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <svg width="64" height="64" viewBox="0 0 64 64">
+        <polygon points="32,4 60,52 4,52" fill="none" stroke="#00c8f0" stroke-width="1.5" opacity="0.7"/>
+        <circle cx="32" cy="32" r="14" fill="none" stroke="#8866ff" stroke-width="1.5" opacity="0.6"/>
+        <rect x="16" y="16" width="32" height="32" fill="none" stroke="#ff4455" stroke-width="1" opacity="0.35" transform="rotate(20 32 32)"/>
+      </svg>
+      <div class="logo-title">SPHERE<span>.</span>IO</div>
+      <div class="logo-sub">Geometric Open World RPG</div>
     </div>
-    <input class="login-input" id="nickname-input" type="text" placeholder="닉네임 입력 (예: 초코라떼)" maxlength="12" />
-    <button class="login-btn" id="join-btn">입장하기 🚀</button>
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchTab('login')">로그인</button>
+      <button class="auth-tab" onclick="switchTab('register')">회원가입</button>
+    </div>
+    <input class="auth-input" id="auth-nick" type="text" placeholder="닉네임" maxlength="12" autocomplete="off"/>
+    <input class="auth-input" id="auth-pw" type="password" placeholder="비밀번호" maxlength="32"/>
+    <div class="auth-error" id="auth-error"></div>
+    <button class="auth-btn" id="auth-btn" onclick="doAuth()">로그인</button>
   </div>
 </div>
 
-<!-- 메인 채팅 화면 -->
-<aside id="sidebar">
-  <div class="sidebar-title">참여자</div>
-  <div class="online-count" id="online-count">0명 온라인</div>
-  <ul id="user-list"></ul>
-</aside>
-
-<main id="chat-main">
-  <header id="chat-header">
-    <div class="header-icon">💬</div>
-    <div class="header-info">
-      <div class="header-title">오픈 채팅방</div>
-      <div class="header-sub" id="header-sub">접속 중...</div>
+<!-- ══ GAME ══ -->
+<div id="game-screen">
+  <!-- HUD -->
+  <div id="hud">
+    <div class="hud-logo">S<span style="color:var(--dim)">·</span>IO</div>
+    <div class="hud-shape" id="hud-shape"></div>
+    <div class="hud-info">
+      <div class="hud-name" id="hud-name">-</div>
+      <div class="hud-class" id="hud-class">-</div>
     </div>
-  </header>
-
-  <div id="messages"></div>
-  <div id="typing-indicator"></div>
-
-  <div id="input-area">
-    <textarea id="message-input" placeholder="메시지를 입력하세요... (Enter로 전송)" rows="1"></textarea>
-    <button id="send-btn">↑</button>
+    <div class="hud-bars">
+      <div class="hud-bar">
+        <div class="hud-bar-label" style="color:#ff7788">HP</div>
+        <div class="hud-track"><div class="hud-fill hp-fill" id="hud-hp-bar" style="width:100%"></div></div>
+        <div class="hud-val" id="hud-hp-val">-</div>
+      </div>
+      <div class="hud-bar">
+        <div class="hud-bar-label" style="color:#8866ff">MP</div>
+        <div class="hud-track"><div class="hud-fill mp-fill" id="hud-mp-bar" style="width:100%"></div></div>
+        <div class="hud-val" id="hud-mp-val">-</div>
+      </div>
+    </div>
+    <div class="hud-stats">
+      <div class="hud-stat">ATK <span id="hud-atk">-</span></div>
+      <div class="hud-stat">DEF <span id="hud-def">-</span></div>
+      <div class="hud-stat">킬 <span id="hud-kills">-</span></div>
+      <div class="hud-stat">EXP <span id="hud-exp">-</span></div>
+    </div>
+    <div class="hud-gold" id="hud-gold">0 G</div>
   </div>
-</main>
+
+  <div id="main">
+    <!-- 맵 -->
+    <div id="map-wrap">
+      <canvas id="map-canvas"></canvas>
+
+      <!-- 전투 오버레이 -->
+      <div id="combat-overlay">
+        <div class="combat-target">
+          <div class="ct-name" id="ct-name">-</div>
+          <div class="ct-hpbar"><div class="ct-hpfill" id="ct-hpfill" style="width:100%"></div></div>
+          <div class="ct-hptext" id="ct-hptext">-</div>
+        </div>
+        <div class="combat-btns">
+          <button class="cbtn cbtn-atk" onclick="doAttack('attack')">공격</button>
+          <button class="cbtn cbtn-skl" onclick="doAttack('skill')">스킬</button>
+          <button class="cbtn cbtn-heal" onclick="doHeal()">회복</button>
+        </div>
+      </div>
+
+      <!-- 미니맵 -->
+      <div id="minimap"><canvas id="minimap-canvas" width="120" height="90"></canvas></div>
+    </div>
+
+    <!-- 오른쪽 패널 -->
+    <div id="right-panel">
+      <div class="panel-tab">
+        <button class="ptab active" onclick="switchPanelTab('players')">플레이어</button>
+        <button class="ptab" onclick="switchPanelTab('chat')">채팅</button>
+      </div>
+      <div id="tab-players" class="panel-content active"></div>
+      <div id="tab-chat" class="panel-content">
+        <div id="messages"></div>
+        <div id="chat-input-wrap">
+          <input id="chat-input" type="text" placeholder="메시지..." maxlength="80"/>
+          <button id="chat-send" onclick="sendChat()">↑</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 직업 선택 모달 -->
+<div id="class-modal">
+  <div class="class-modal-card">
+    <div class="cm-title">직업 각성</div>
+    <div class="cm-sub">조건을 달성했습니다! 직업을 선택하세요. 한번 선택하면 변경할 수 없습니다.</div>
+    <div class="cm-grid" id="cm-grid"></div>
+    <button class="cm-close" onclick="closeClassModal()">나중에 선택</button>
+  </div>
+</div>
+
+<!-- 레벨업 팝업 -->
+<div id="levelup-pop">
+  <div class="lup-t">LEVEL UP</div>
+  <div class="lup-n" id="lup-n">2</div>
+  <div class="lup-evo" id="lup-evo"></div>
+</div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
-  const socket = io();
-  let myNickname = '';
-  let typingTimer;
-  let isTyping = false;
-  const typingUsers = new Set();
+const socket = io();
 
-  // ─── 닉네임 입장 ───
-  function joinChat() {
-    const nickname = document.getElementById('nickname-input').value.trim();
-    if (!nickname) {
-      document.getElementById('nickname-input').focus();
-      return;
+// ── 상태 ──
+let me = null;
+let authMode = 'login';
+let allPlayers = {};    // id -> player data
+let allMonsters = {};   // uid -> monster data
+let selectedMonster = null;
+let camX = 0, camY = 0;
+let keysDown = {};
+const SPEED = 3;
+const MAP_W = 2000, MAP_H = 1500;
+const TOWN_X = 250, TOWN_Y = 750;
+const DUNGEON_X = 1780, DUNGEON_Y = 750, DUNGEON_R = 70;
+
+// ── 캔버스 ──
+const canvas = document.getElementById('map-canvas');
+const ctx = canvas.getContext('2d');
+const mmCanvas = document.getElementById('minimap-canvas');
+const mmCtx = mmCanvas.getContext('2d');
+
+function resizeCanvas() {
+  const wrap = document.getElementById('map-wrap');
+  canvas.width = wrap.clientWidth;
+  canvas.height = wrap.clientHeight;
+}
+window.addEventListener('resize', resizeCanvas);
+
+// ── 인증 ──
+function switchTab(mode) {
+  authMode = mode;
+  document.querySelectorAll('.auth-tab').forEach((t,i) => t.classList.toggle('active', (i===0&&mode==='login')||(i===1&&mode==='register')));
+  document.getElementById('auth-btn').textContent = mode === 'login' ? '로그인' : '회원가입';
+  document.getElementById('auth-error').textContent = '';
+}
+function doAuth() {
+  const nickname = document.getElementById('auth-nick').value.trim();
+  const password = document.getElementById('auth-pw').value;
+  if (!nickname || !password) { showAuthErr('닉네임과 비밀번호를 입력하세요.'); return; }
+  socket.emit(authMode === 'login' ? 'login' : 'register', { nickname, password });
+}
+document.getElementById('auth-pw').addEventListener('keydown', e => { if(e.key==='Enter') doAuth(); });
+document.getElementById('auth-nick').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('auth-pw').focus(); });
+function showAuthErr(msg) { document.getElementById('auth-error').textContent = msg; }
+
+socket.on('auth error', msg => showAuthErr(msg));
+
+socket.on('login success', data => {
+  me = { ...data };
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('game-screen').style.display = 'flex';
+  resizeCanvas();
+  updateHUD();
+  camX = me.x - canvas.width / 2;
+  camY = me.y - canvas.height / 2;
+  requestAnimationFrame(gameLoop);
+});
+
+// ── 도형 그리기 ──
+function drawShape(ctx, shape, x, y, size, color, alpha = 1, filled = false) {
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color + '28';
+  ctx.lineWidth = 2;
+  ctx.shadowColor = color;
+  ctx.shadowBlur = filled ? 8 : 12;
+  ctx.beginPath();
+  switch(shape) {
+    case 'circle': ctx.arc(x, y, size/2, 0, Math.PI*2); break;
+    case 'triangle': {
+      const h = size * 0.866;
+      ctx.moveTo(x, y - size*0.577);
+      ctx.lineTo(x + size/2, y + h*0.423);
+      ctx.lineTo(x - size/2, y + h*0.423);
+      ctx.closePath(); break;
     }
-    myNickname = nickname;
-    socket.emit('set nickname', nickname);
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('message-input').focus();
+    case 'square': {
+      const s2 = size/2;
+      ctx.rect(x - s2, y - s2, size, size); break;
+    }
+    case 'pentagon': drawPoly(ctx, x, y, size/2, 5, -90); break;
+    case 'hexagon': drawPoly(ctx, x, y, size/2, 6, 0); break;
+    case 'star': drawStar(ctx, x, y, size/2, size/4, 5); break;
+    default: ctx.arc(x, y, size/2, 0, Math.PI*2);
+  }
+  if (filled) ctx.fill();
+  ctx.stroke();
+  ctx.restore();
+}
+function drawPoly(ctx, cx, cy, r, sides, startAngle) {
+  for (let i = 0; i <= sides; i++) {
+    const a = (i * 360/sides + startAngle) * Math.PI/180;
+    i === 0 ? ctx.moveTo(cx + r*Math.cos(a), cy + r*Math.sin(a)) : ctx.lineTo(cx + r*Math.cos(a), cy + r*Math.sin(a));
+  }
+  ctx.closePath();
+}
+function drawStar(ctx, cx, cy, outerR, innerR, points) {
+  for (let i = 0; i <= points*2; i++) {
+    const r = i % 2 === 0 ? outerR : innerR;
+    const a = (i * 180/points - 90) * Math.PI/180;
+    i === 0 ? ctx.moveTo(cx + r*Math.cos(a), cy + r*Math.sin(a)) : ctx.lineTo(cx + r*Math.cos(a), cy + r*Math.sin(a));
+  }
+  ctx.closePath();
+}
+
+// ── 게임 루프 ──
+let lastTime = 0;
+function gameLoop(ts) {
+  if (!me) return;
+  const dt = ts - lastTime; lastTime = ts;
+  handleMovement(dt);
+  render();
+  renderMinimap();
+  requestAnimationFrame(gameLoop);
+}
+
+function handleMovement(dt) {
+  if (!me || me.hp <= 0) return;
+  let dx = 0, dy = 0;
+  if (keysDown['ArrowLeft']  || keysDown['a'] || keysDown['A']) dx -= SPEED;
+  if (keysDown['ArrowRight'] || keysDown['d'] || keysDown['D']) dx += SPEED;
+  if (keysDown['ArrowUp']    || keysDown['w'] || keysDown['W']) dy -= SPEED;
+  if (keysDown['ArrowDown']  || keysDown['s'] || keysDown['S']) dy += SPEED;
+  if (dx !== 0 && dy !== 0) { dx *= 0.707; dy *= 0.707; }
+  if (dx !== 0 || dy !== 0) {
+    me.x = Math.max(20, Math.min(MAP_W - 20, me.x + dx));
+    me.y = Math.max(20, Math.min(MAP_H - 20, me.y + dy));
+    socket.emit('move', { x: me.x, y: me.y });
+    // 던전 근처 체크
+    const dDist = Math.hypot(me.x - DUNGEON_X, me.y - DUNGEON_Y);
+    if (dDist < DUNGEON_R + 10) addSysMsg('[던전 입구] 던전 시스템은 다음 업데이트 예정입니다!');
+  }
+  // 카메라
+  camX += (me.x - canvas.width/2 - camX) * 0.1;
+  camY += (me.y - canvas.height/2 - camY) * 0.1;
+}
+
+function render() {
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  // 배경
+  ctx.fillStyle = '#07090d';
+  ctx.fillRect(0, 0, W, H);
+
+  // 그리드
+  ctx.strokeStyle = 'rgba(26,34,53,0.6)';
+  ctx.lineWidth = 1;
+  const gs = 80;
+  const ox = (-camX) % gs, oy = (-camY) % gs;
+  for (let x = ox; x < W; x += gs) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+  for (let y = oy; y < H; y += gs) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+
+  // 맵 경계
+  ctx.strokeStyle = '#1a2235';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(-camX, -camY, MAP_W, MAP_H);
+
+  // 마을 영역
+  ctx.save();
+  ctx.globalAlpha = 0.07;
+  ctx.fillStyle = '#4ecdc4';
+  ctx.beginPath();
+  ctx.arc(TOWN_X - camX, TOWN_Y - camY, 200, 0, Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+  ctx.save();
+  ctx.globalAlpha = 0.3;
+  ctx.strokeStyle = '#4ecdc4';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 8]);
+  ctx.beginPath();
+  ctx.arc(TOWN_X - camX, TOWN_Y - camY, 200, 0, Math.PI*2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+  // 마을 라벨
+  ctx.fillStyle = 'rgba(78,205,196,0.5)';
+  ctx.font = '11px Rajdhani, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('TOWN', TOWN_X - camX, TOWN_Y - camY - 210);
+
+  // 던전 입구
+  const dungX = DUNGEON_X - camX, dungY = DUNGEON_Y - camY;
+  ctx.save();
+  ctx.globalAlpha = 0.1;
+  ctx.fillStyle = '#ff4455';
+  ctx.beginPath();
+  ctx.arc(dungX, dungY, DUNGEON_R, 0, Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+  ctx.save();
+  const t = Date.now() / 1000;
+  ctx.globalAlpha = 0.4 + Math.sin(t*2)*0.2;
+  ctx.strokeStyle = '#ff4455';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([4, 6]);
+  ctx.beginPath();
+  ctx.arc(dungX, dungY, DUNGEON_R, 0, Math.PI*2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+  ctx.fillStyle = 'rgba(255,68,85,0.7)';
+  ctx.font = 'bold 12px Rajdhani, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('DUNGEON', dungX, dungY - DUNGEON_R - 8);
+  // 던전 도형
+  drawShape(ctx, 'hexagon', dungX, dungY, 36, '#ff4455', 0.6);
+
+  // 몬스터
+  for (const m of Object.values(allMonsters)) {
+    const mx = m.x - camX, my = m.y - camY;
+    if (mx < -60 || mx > W+60 || my < -60 || my > H+60) continue;
+    const sel = selectedMonster && selectedMonster.uid === m.uid;
+    drawShape(ctx, m.shape, mx, my, sel ? 30 : 26, m.color, sel ? 1 : 0.85);
+    // HP바
+    const bw = 34, bh = 4, bx = mx - bw/2, by = my - 22;
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.fillRect(bx, by, bw, bh);
+    ctx.fillStyle = m.color;
+    ctx.fillRect(bx, by, bw * (m.hp/m.maxHp), bh);
+    // 이름
+    ctx.fillStyle = m.color + 'aa';
+    ctx.font = '10px Noto Sans KR, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(m.name, mx, my + 24);
   }
 
-  document.getElementById('join-btn').addEventListener('click', joinChat);
-  document.getElementById('nickname-input').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') joinChat();
-  });
-
-  // ─── 메시지 전송 ───
-  function sendMessage() {
-    const input = document.getElementById('message-input');
-    const message = input.value.trim();
-    if (!message) return;
-    socket.emit('chat message', { message });
-    input.value = '';
-    input.style.height = 'auto';
-    clearTyping();
+  // 다른 플레이어
+  for (const [id, p] of Object.entries(allPlayers)) {
+    if (id === socket.id) continue;
+    const px = p.x - camX, py = p.y - camY;
+    if (px < -60 || px > W+60 || py < -60 || py > H+60) continue;
+    drawShape(ctx, p.shape, px, py, 24, p.color, 0.9, true);
+    ctx.fillStyle = p.color + 'cc';
+    ctx.font = '11px Rajdhani, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(p.nickname, px, py - 18);
+    ctx.fillStyle = p.color + '55';
+    ctx.font = '10px sans-serif';
+    ctx.fillText(`Lv.${p.level}`, px, py + 22);
   }
 
-  document.getElementById('send-btn').addEventListener('click', sendMessage);
-  document.getElementById('message-input').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
+  // 내 캐릭터
+  if (me) {
+    const px = me.x - camX, py = me.y - camY;
+    drawShape(ctx, me.shape, px, py, 28, me.color, 1, true);
+    // 내 이름
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 12px Rajdhani, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(me.nickname, px, py - 20);
+    // 사망 상태
+    if (me.hp <= 0) {
+      ctx.save();
+      ctx.globalAlpha = 0.5;
+      ctx.fillStyle = '#ff4455';
+      ctx.font = '16px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('X', px, py + 6);
+      ctx.restore();
     }
-  });
-
-  // 자동 높이 조절
-  document.getElementById('message-input').addEventListener('input', function() {
-    this.style.height = 'auto';
-    this.style.height = Math.min(this.scrollHeight, 120) + 'px';
-    handleTyping();
-  });
-
-  // ─── 타이핑 표시 ───
-  function handleTyping() {
-    if (!isTyping) {
-      isTyping = true;
-      socket.emit('typing', true);
-    }
-    clearTimeout(typingTimer);
-    typingTimer = setTimeout(clearTyping, 1500);
   }
+}
 
-  function clearTyping() {
-    if (isTyping) {
-      isTyping = false;
-      socket.emit('typing', false);
-    }
-    clearTimeout(typingTimer);
+function renderMinimap() {
+  const mw = 120, mh = 90;
+  mmCtx.clearRect(0, 0, mw, mh);
+  mmCtx.fillStyle = 'rgba(7,9,13,0.9)';
+  mmCtx.fillRect(0, 0, mw, mh);
+  const scaleX = mw / MAP_W, scaleY = mh / MAP_H;
+  // 마을
+  mmCtx.fillStyle = 'rgba(78,205,196,0.25)';
+  mmCtx.beginPath();
+  mmCtx.arc(TOWN_X*scaleX, TOWN_Y*scaleY, 10, 0, Math.PI*2);
+  mmCtx.fill();
+  // 던전
+  mmCtx.fillStyle = 'rgba(255,68,85,0.25)';
+  mmCtx.beginPath();
+  mmCtx.arc(DUNGEON_X*scaleX, DUNGEON_Y*scaleY, 5, 0, Math.PI*2);
+  mmCtx.fill();
+  // 몬스터
+  mmCtx.fillStyle = 'rgba(255,100,100,0.5)';
+  for (const m of Object.values(allMonsters)) {
+    mmCtx.fillRect(m.x*scaleX - 1, m.y*scaleY - 1, 2, 2);
   }
+  // 다른 플레이어
+  for (const [id, p] of Object.entries(allPlayers)) {
+    if (id === socket.id) continue;
+    mmCtx.fillStyle = p.color + 'aa';
+    mmCtx.fillRect(p.x*scaleX - 2, p.y*scaleY - 2, 4, 4);
+  }
+  // 나
+  if (me) {
+    mmCtx.fillStyle = '#fff';
+    mmCtx.fillRect(me.x*scaleX - 2.5, me.y*scaleY - 2.5, 5, 5);
+  }
+  // 카메라 뷰 영역
+  mmCtx.strokeStyle = 'rgba(0,200,240,0.3)';
+  mmCtx.lineWidth = 1;
+  mmCtx.strokeRect(camX*scaleX, camY*scaleY, canvas.width*scaleX, canvas.height*scaleY);
+}
 
-  // ─── 소켓 이벤트 ───
-  socket.on('chat message', (data) => {
-    const isMine = data.id === socket.id;
-    const wrapper = document.createElement('div');
-    wrapper.className = `msg-wrapper ${isMine ? 'mine' : 'other'}`;
-    wrapper.innerHTML = `
-      ${!isMine ? `<div class="msg-meta">${escapeHtml(data.nickname)}</div>` : ''}
-      <div class="msg-bubble">${escapeHtml(data.message)}</div>
-      <div class="msg-time">${data.time}</div>
-    `;
-    appendMessage(wrapper);
-  });
+// ── 키보드 ──
+window.addEventListener('keydown', e => { keysDown[e.key] = true; });
+window.addEventListener('keyup', e => { keysDown[e.key] = false; });
 
-  socket.on('system message', (msg) => {
+// ── 클릭: 몬스터 선택 ──
+canvas.addEventListener('click', e => {
+  if (!me || me.hp <= 0) return;
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left + camX;
+  const my = e.clientY - rect.top + camY;
+  // 몬스터 클릭 체크
+  let clicked = null;
+  for (const m of Object.values(allMonsters)) {
+    if (Math.hypot(mx - m.x, my - m.y) < 22) { clicked = m; break; }
+  }
+  selectedMonster = clicked;
+  const overlay = document.getElementById('combat-overlay');
+  if (clicked) {
+    overlay.style.display = 'flex';
+    updateCombatUI(clicked);
+  } else {
+    overlay.style.display = 'none';
+  }
+});
+
+function updateCombatUI(m) {
+  document.getElementById('ct-name').textContent = m.name;
+  const pct = m.maxHp > 0 ? (m.hp / m.maxHp * 100) : 0;
+  document.getElementById('ct-hpfill').style.width = pct + '%';
+  document.getElementById('ct-hptext').textContent = `${m.hp} / ${m.maxHp}`;
+}
+
+// ── 전투 ──
+function doAttack(action) {
+  if (!selectedMonster || !me || me.hp <= 0) return;
+  socket.emit('attack monster', { uid: selectedMonster.uid, action });
+}
+function doHeal() {
+  if (!me) return;
+  socket.emit('heal');
+}
+
+// ── 소켓 이벤트 ──
+socket.on('field state', ({ monsters, players }) => {
+  allMonsters = {};
+  monsters.forEach(m => allMonsters[m.uid] = m);
+  allPlayers = {};
+  players.forEach(p => allPlayers[p.id] = p);
+  updatePlayerPanel();
+});
+
+socket.on('player joined', p => { allPlayers[p.id] = p; updatePlayerPanel(); });
+socket.on('player left', id => { delete allPlayers[id]; updatePlayerPanel(); });
+socket.on('player moved', ({ id, x, y }) => { if (allPlayers[id]) { allPlayers[id].x = x; allPlayers[id].y = y; } });
+socket.on('player shape update', ({ id, shape, color, level }) => {
+  if (allPlayers[id]) { allPlayers[id].shape = shape; allPlayers[id].color = color; if(level) allPlayers[id].level = level; }
+  if (id === socket.id && me) { me.shape = shape; me.color = color; if(level) me.level = level; updateHUD(); }
+  updatePlayerPanel();
+});
+
+socket.on('combat result', data => {
+  // 몬스터 HP 업데이트
+  if (allMonsters[data.monsterUid]) {
+    allMonsters[data.monsterUid].hp = data.monsterHp;
+    if (selectedMonster && selectedMonster.uid === data.monsterUid) {
+      selectedMonster.hp = data.monsterHp;
+      updateCombatUI(selectedMonster);
+    }
+  }
+  // 내 HP 업데이트
+  if (data.attackerId === socket.id && me) {
+    me.hp = data.playerHp;
+    me.mp = data.playerMp;
+    updateHUD();
+  }
+  // 데미지 팝업
+  showDmgPopup(data.dmg, data.action === 'skill' ? '#8866ff' : '#ff7788');
+  // 로그
+  if (data.attackerId === socket.id) {
+    const msg = data.action === 'skill'
+      ? `[${data.skillName}] → ${data.dmg}! 반격 ${data.counterDmg}`
+      : `공격 → ${data.dmg}  반격 ${data.counterDmg}`;
+    addSysMsg(msg);
+  }
+});
+
+socket.on('monster killed', ({ uid, killerNickname, exp, gold }) => {
+  if (allMonsters[uid]) delete allMonsters[uid];
+  if (selectedMonster && selectedMonster.uid === uid) {
+    selectedMonster = null;
+    document.getElementById('combat-overlay').style.display = 'none';
+  }
+  addSysMsg(`[처치] ${killerNickname}이(가) 처치! +${exp}EXP +${gold}G`);
+  if (me && killerNickname === me.nickname) { me.exp += exp; me.gold += gold; me.kills++; updateHUD(); }
+});
+
+socket.on('healed', ({ hp, maxHp, mp, maxMp, amt }) => {
+  if (me) { me.hp = hp; me.maxHp = maxHp; me.mp = mp; me.maxMp = maxMp; updateHUD(); }
+  showDmgPopup('+' + amt, '#3dffaa');
+});
+
+socket.on('level up', data => {
+  if (!me) return;
+  me.level = data.level; me.exp = data.exp;
+  me.maxHp = data.maxHp; me.hp = data.hp;
+  me.atk = data.atk; me.def = data.def;
+  me.shape = data.shape; me.color = data.color;
+  updateHUD();
+  showLevelUp(data.level, data.evolved ? data.evolvedName : null);
+});
+
+socket.on('revive', ({ hp, x, y, gold }) => {
+  if (!me) return;
+  me.hp = hp; me.x = x; me.y = y; me.gold = gold;
+  updateHUD();
+  addSysMsg('[부활] 마을에서 되살아났습니다.');
+});
+
+socket.on('system message', msg => addSysMsg(msg));
+
+socket.on('chat message', ({ nickname, message, color, time }) => {
+  const msgs = document.getElementById('messages');
+  const el = document.createElement('div');
+  el.className = 'chat-msg';
+  el.innerHTML = `<span class="chat-nick" style="color:${color}">${esc(nickname)}</span> <span style="color:var(--dim)">${time}</span><br>${esc(message)}`;
+  msgs.appendChild(el);
+  msgs.scrollTop = msgs.scrollHeight;
+  // 채팅 탭으로 자동 전환 표시 (선택사항)
+});
+
+socket.on('class unlock available', classes => {
+  openClassModal(classes);
+});
+
+socket.on('class chosen', data => {
+  if (!me) return;
+  Object.assign(me, data);
+  updateHUD();
+  closeClassModal();
+});
+
+// ── UI 업데이트 ──
+function updateHUD() {
+  if (!me) return;
+  const classLabel = me.className ? `[${me.className}] ` : '';
+  document.getElementById('hud-name').textContent = me.nickname;
+  document.getElementById('hud-class').textContent = `${classLabel}Lv.${me.level} · ${getEvoName(me.level, me.className)}`;
+  document.getElementById('hud-shape').innerHTML = makeShapeSVG(me.shape, 28, me.color);
+  document.getElementById('hud-hp-bar').style.width = (me.hp/me.maxHp*100) + '%';
+  document.getElementById('hud-hp-val').textContent = `${me.hp}/${me.maxHp}`;
+  document.getElementById('hud-mp-bar').style.width = (me.mp/me.maxMp*100) + '%';
+  document.getElementById('hud-mp-val').textContent = `${me.mp}/${me.maxMp}`;
+  document.getElementById('hud-atk').textContent = me.atk;
+  document.getElementById('hud-def').textContent = me.def;
+  document.getElementById('hud-kills').textContent = me.kills || 0;
+  document.getElementById('hud-exp').textContent = `${me.exp}/${expForLevel(me.level)}`;
+  document.getElementById('hud-gold').textContent = `${me.gold} G`;
+}
+
+function expForLevel(lv) { return lv * 100 + (lv - 1) * 50; }
+
+const EVO_TABLE = [
+  {level:1,name:'원형체'},{level:5,name:'삼각체'},{level:10,name:'사각체'},
+  {level:18,name:'오각체'},{level:28,name:'육각체'},{level:40,name:'성형체'}
+];
+function getEvoName(level, cls) {
+  if (cls) return cls;
+  let n = '원형체';
+  for (const e of EVO_TABLE) { if(level >= e.level) n = e.name; else break; }
+  return n;
+}
+
+function updatePlayerPanel() {
+  const list = document.getElementById('tab-players');
+  list.innerHTML = '';
+  const entries = [
+    me ? { id: socket.id, nickname: me.nickname, shape: me.shape, color: me.color, level: me.level, hp: me.hp, maxHp: me.maxHp, className: me.className } : null,
+    ...Object.entries(allPlayers).filter(([id]) => id !== socket.id).map(([id, p]) => ({ id, ...p }))
+  ].filter(Boolean);
+  entries.forEach(p => {
+    const isMe = p.id === socket.id;
     const el = document.createElement('div');
-    el.className = 'system-msg';
-    el.textContent = msg;
-    appendMessage(el);
+    el.className = 'player-row' + (isMe ? ' is-me' : '');
+    el.innerHTML = `
+      <div class="pr-top">
+        <div class="pr-shape">${makeShapeSVG(p.shape, 22, p.color)}</div>
+        <div style="flex:1;min-width:0">
+          <div class="pr-nick" style="color:${p.color}">${esc(p.nickname)}${isMe?' (나)':''}</div>
+          <div class="pr-lv">Lv.${p.level}${p.className ? ' · '+p.className : ''}</div>
+        </div>
+      </div>
+      <div class="pr-hpbar"><div class="pr-hpfill" style="width:${p.maxHp>0?p.hp/p.maxHp*100:0}%"></div></div>
+    `;
+    list.appendChild(el);
   });
+}
 
-  socket.on('user list', (users) => {
-    const list = document.getElementById('user-list');
-    list.innerHTML = users.map(u =>
-      `<li><span class="user-dot"></span>${escapeHtml(u)}</li>`
-    ).join('');
-    document.getElementById('online-count').textContent = `${users.length}명 온라인`;
-    document.getElementById('header-sub').textContent = `${users.length}명 참여 중`;
+// ── 직업 모달 ──
+function openClassModal(classes) {
+  const grid = document.getElementById('cm-grid');
+  grid.innerHTML = '';
+  classes.forEach(cls => {
+    const el = document.createElement('div');
+    el.className = 'cm-card';
+    el.style.borderColor = cls.color + '55';
+    el.innerHTML = `
+      <div class="cm-shape">${makeShapeSVG(cls.shape, 44, cls.color)}</div>
+      <div class="cm-name" style="color:${cls.color}">${cls.name}</div>
+      <div class="cm-cond">${cls.condition}</div>
+    `;
+    el.onclick = () => socket.emit('choose class', cls.id);
+    grid.appendChild(el);
   });
+  document.getElementById('class-modal').classList.add('show');
+}
+function closeClassModal() { document.getElementById('class-modal').classList.remove('show'); }
 
-  socket.on('typing', ({ nickname, isTyping }) => {
-    if (isTyping) typingUsers.add(nickname);
-    else typingUsers.delete(nickname);
-    const el = document.getElementById('typing-indicator');
-    if (typingUsers.size > 0) {
-      el.textContent = [...typingUsers].join(', ') + '님이 입력 중...';
-    } else {
-      el.textContent = '';
+// ── 레벨업 팝업 ──
+function showLevelUp(level, evolvedName) {
+  const pop = document.getElementById('levelup-pop');
+  document.getElementById('lup-n').textContent = level;
+  document.getElementById('lup-evo').textContent = evolvedName ? `${evolvedName}으로 진화` : '';
+  pop.classList.add('show');
+  setTimeout(() => pop.classList.remove('show'), 2500);
+}
+
+// ── 데미지 팝업 ──
+function showDmgPopup(val, color) {
+  const el = document.createElement('div');
+  el.className = 'dmg-float';
+  const cx = canvas.getBoundingClientRect().left + canvas.width/2;
+  const cy = canvas.getBoundingClientRect().top + canvas.height/2;
+  el.style.cssText = `left:${cx - 40 + Math.random()*80}px;top:${cy - 60 + Math.random()*40}px;color:${color};`;
+  el.textContent = val;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1000);
+}
+
+// ── 채팅 ──
+function sendChat() {
+  const input = document.getElementById('chat-input');
+  const msg = input.value.trim();
+  if (!msg) return;
+  socket.emit('chat message', { message: msg });
+  input.value = '';
+}
+document.getElementById('chat-input').addEventListener('keydown', e => { if(e.key==='Enter') sendChat(); });
+
+function addSysMsg(msg) {
+  const msgs = document.getElementById('messages');
+  const el = document.createElement('div');
+  el.className = 'chat-sys';
+  el.textContent = msg;
+  msgs.appendChild(el);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+// ── 패널 탭 ──
+function switchPanelTab(tab) {
+  document.querySelectorAll('.ptab').forEach((t,i) => t.classList.toggle('active', (i===0&&tab==='players')||(i===1&&tab==='chat')));
+  document.getElementById('tab-players').classList.toggle('active', tab==='players');
+  document.getElementById('tab-chat').classList.toggle('active', tab==='chat');
+}
+
+// ── SVG 도형 헬퍼 ──
+function makeShapeSVG(shape, size, color) {
+  const c = color, s = size, h = size;
+  switch(shape) {
+    case 'circle': return `<svg width="${s}" height="${h}" viewBox="0 0 ${s} ${h}"><circle cx="${s/2}" cy="${h/2}" r="${s/2-2}" fill="${c}22" stroke="${c}" stroke-width="1.5"/></svg>`;
+    case 'triangle': return `<svg width="${s}" height="${h}" viewBox="0 0 ${s} ${h}"><polygon points="${s/2},2 ${s-2},${h-2} 2,${h-2}" fill="${c}22" stroke="${c}" stroke-width="1.5"/></svg>`;
+    case 'square': return `<svg width="${s}" height="${h}" viewBox="0 0 ${s} ${h}"><rect x="2" y="2" width="${s-4}" height="${h-4}" fill="${c}22" stroke="${c}" stroke-width="1.5"/></svg>`;
+    case 'pentagon': {
+      const cx=s/2,cy=h/2,r=s/2-2;
+      const pts=[0,1,2,3,4].map(i=>{const a=(i*72-90)*Math.PI/180;return `${cx+r*Math.cos(a)},${cy+r*Math.sin(a)}`;}).join(' ');
+      return `<svg width="${s}" height="${h}" viewBox="0 0 ${s} ${h}"><polygon points="${pts}" fill="${c}22" stroke="${c}" stroke-width="1.5"/></svg>`;
     }
-  });
-
-  // ─── 유틸 ───
-  function appendMessage(el) {
-    const container = document.getElementById('messages');
-    container.appendChild(el);
-    container.scrollTop = container.scrollHeight;
+    case 'hexagon': {
+      const cx=s/2,cy=h/2,r=s/2-2;
+      const pts=[0,1,2,3,4,5].map(i=>{const a=(i*60-30)*Math.PI/180;return `${cx+r*Math.cos(a)},${cy+r*Math.sin(a)}`;}).join(' ');
+      return `<svg width="${s}" height="${h}" viewBox="0 0 ${s} ${h}"><polygon points="${pts}" fill="${c}22" stroke="${c}" stroke-width="1.5"/></svg>`;
+    }
+    case 'star': {
+      const cx=s/2,cy=h/2,ro=s/2-2,ri=s/4;
+      let pts='';
+      for(let i=0;i<10;i++){const r=i%2===0?ro:ri;const a=(i*36-90)*Math.PI/180;pts+=`${cx+r*Math.cos(a)},${cy+r*Math.sin(a)} `;}
+      return `<svg width="${s}" height="${h}" viewBox="0 0 ${s} ${h}"><polygon points="${pts.trim()}" fill="${c}22" stroke="${c}" stroke-width="1.5"/></svg>`;
+    }
+    default: return makeShapeSVG('circle', size, color);
   }
+}
 
-  function escapeHtml(text) {
-    return text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  }
+function esc(t) { return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 </script>
 </body>
 </html>
