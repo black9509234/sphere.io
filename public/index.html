@@ -528,7 +528,7 @@ function updateMonsterAI(dt) {
     var ai = monsterAI[m.uid];
     var distToPlayer = Math.hypot(me.x - m.x, me.y - m.y);
 
-    // 상태 전환
+    // 상태 판단 (렌더링 표시용)
     if (distToPlayer < CLI_DETECT_RANGE) {
       ai.state = 'chase';
       ai.aggroTimer = 3000;
@@ -537,6 +537,8 @@ function updateMonsterAI(dt) {
       if (ai.aggroTimer <= 0) ai.state = 'wander';
     }
 
+    // 위치 예측은 chase 상태에서만
+    // wander 중에는 monster positions(100ms)의 서버 위치 보간만으로 이동
     if (ai.state === 'chase') {
       var dx = me.x - m.x, dy = me.y - m.y;
       var dist = Math.hypot(dx, dy);
@@ -544,32 +546,6 @@ function updateMonsterAI(dt) {
         var spd = CLI_CHASE_SPEED * (dt / 16);
         m.x += (dx / dist) * spd;
         m.y += (dy / dist) * spd;
-      }
-    } else {
-      // 배회: idle -> (목적지 설정) -> move -> 도착 -> idle
-      ai.wanderTimer -= dt;
-      if (ai.wanderPhase === 'idle') {
-        if (ai.wanderTimer <= 0) {
-          var angle = Math.random() * Math.PI * 2;
-          var r = 40 + Math.random() * CLI_WANDER_RANGE;
-          ai.tx = Math.max(50, Math.min(MAP_W - 50, ai.spawnX + Math.cos(angle) * r));
-          ai.ty = Math.max(50, Math.min(MAP_H - 50, ai.spawnY + Math.sin(angle) * r));
-          ai.wanderPhase = 'move';
-          ai.wanderTimer = 0;
-        }
-      } else {
-        var wdx = ai.tx - m.x, wdy = ai.ty - m.y;
-        var wdist = Math.hypot(wdx, wdy);
-        if (wdist > 3) {
-          var wspd = CLI_WANDER_SPEED * (dt / 16);
-          var move = Math.min(wspd, wdist); // 목적지 오버슛 방지
-          m.x += (wdx / wdist) * move;
-          m.y += (wdy / wdist) * move;
-        } else {
-          m.x = ai.tx; m.y = ai.ty;
-          ai.wanderPhase = 'idle';
-          ai.wanderTimer = 800 + Math.random() * 600;
-        }
       }
     }
   }
@@ -919,15 +895,36 @@ socket.on('monster positions', function(positions) {
     var pos = positions[i];
     var m = allMonsters[pos.uid];
     if (!m) continue;
+
+    var ai = monsterAI[pos.uid];
+    var prevState = ai ? ai.state : 'wander';
+
+    // 서버 state 먼저 반영
+    if (ai) ai.state = pos.state;
+
     var err = Math.hypot(pos.x - m.x, pos.y - m.y);
-    if (err > 80) {
-      m.x = pos.x; m.y = pos.y;
+
+    if (pos.state === 'wander') {
+      // 배회 중: 서버가 권위 있는 위치
+      // 오차가 크면 즉시 보정, 작으면 부드럽게 따라가기
+      if (err > 60) {
+        // 큰 오차(순간이동 등) → 즉시 맞춤
+        m.x = pos.x; m.y = pos.y;
+      } else {
+        // 100ms 간격으로 오는 서버 위치를 향해 선형 이동
+        // lerp 0.3 → 100ms 안에 자연스럽게 도달
+        m.x += (pos.x - m.x) * 0.3;
+        m.y += (pos.y - m.y) * 0.3;
+      }
     } else {
-      m.x += (pos.x - m.x) * 0.15;
-      m.y += (pos.y - m.y) * 0.15;
+      // chase 중: 클라이언트 AI가 예측하고 있으므로 서버 보정은 최소
+      if (err > 80) {
+        m.x = pos.x; m.y = pos.y;
+      }
+      // 오차 소간에는 클라이언트 예측 위치 그대로 사용 (jerk 방지)
     }
+
     m.hp = pos.hp;
-    if (monsterAI[pos.uid]) monsterAI[pos.uid].state = pos.state;
   }
 });
 
