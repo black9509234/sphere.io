@@ -362,58 +362,63 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 <script>
 const socket = io();
 
-// ── 상태 ──
+// ══════════════════════════════════════
+//  상태 변수
+// ══════════════════════════════════════
 let me = null;
 let authMode = 'login';
-let allPlayers = {};    // id -> player data
-let allMonsters = {};   // uid -> monster data
-let nearestMonster = null;  // 현재 가장 가까운 몹 (전투 타겟)
+let allPlayers  = {};
+let allMonsters = {};
+let monsterAI   = {};
+let nearestMonster = null;  // 범위 내 자동 선택
+let targetMonster  = null;  // 클릭 수동 선택
+
 let camX = 0, camY = 0;
 let keysDown = {};
-const SPEED = 3;
-const MAP_W = 2000, MAP_H = 1500;
-const TOWN_X = 250, TOWN_Y = 750;
-const DUNGEON_X = 1780, DUNGEON_Y = 750, DUNGEON_R = 70;
-const ATTACK_RANGE = 130;      // 클릭 공격 허용 거리 (서버 기준과 동일)
-const CONTACT_RANGE = 22;      // 몬스터 접촉 공격 범위
-const SKILL_COOLDOWN = 2000;
-let lastSkillTime = 0;
-let lastAttackTime = 0;
-const ATTACK_COOLDOWN = 500;   // ms
 
-// 몹 클라이언트 AI 상태
-let monsterAI = {};
+const SPEED             = 3;
+const MAP_W             = 2000, MAP_H = 1500;
+const TOWN_X            = 250,  TOWN_Y = 750;
+const DUNGEON_X         = 1780, DUNGEON_Y = 750, DUNGEON_R = 70;
+const ATTACK_RANGE      = 130;
+const AUTO_SELECT_RANGE = 160;
+const SKILL_COOLDOWN    = 2000;
+const ATTACK_COOLDOWN   = 500;
+const CULL_MARGIN       = 80;
 
-// 뷰포트 컬링 마진
-const CULL_MARGIN = 80;
-
-// 온라인 플레이어 수
-let onlineCount = 0;
-
-// 클라이언트 AI 설정 (서버와 동일)
-const CLI_DETECT_RANGE = 200;
-const CLI_CHASE_SPEED = 1.5;
-const CLI_WANDER_SPEED = 0.25;
-const CLI_WANDER_RANGE = 130;
+const CLI_DETECT_RANGE  = 200;
+const CLI_CHASE_SPEED   = 1.5;
+const CLI_WANDER_SPEED  = 0.25;
+const CLI_WANDER_RANGE  = 130;
 const CLI_CONTACT_RANGE = 22;
 
-// ── 캔버스 ──
-const canvas = document.getElementById('map-canvas');
-const ctx = canvas.getContext('2d');
+let lastSkillTime  = 0;
+let lastAttackTime = 0;
+let onlineCount    = 0;
+
+// ══════════════════════════════════════
+//  캔버스
+// ══════════════════════════════════════
+const canvas   = document.getElementById('map-canvas');
+const ctx      = canvas.getContext('2d');
 const mmCanvas = document.getElementById('minimap-canvas');
-const mmCtx = mmCanvas.getContext('2d');
+const mmCtx    = mmCanvas.getContext('2d');
 
 function resizeCanvas() {
   const wrap = document.getElementById('map-wrap');
-  canvas.width = wrap.clientWidth;
+  canvas.width  = wrap.clientWidth;
   canvas.height = wrap.clientHeight;
 }
 window.addEventListener('resize', resizeCanvas);
 
-// ── 인증 ──
+// ══════════════════════════════════════
+//  인증
+// ══════════════════════════════════════
 function switchTab(mode) {
   authMode = mode;
-  document.querySelectorAll('.auth-tab').forEach((t,i) => t.classList.toggle('active', (i===0&&mode==='login')||(i===1&&mode==='register')));
+  document.querySelectorAll('.auth-tab').forEach((t, i) =>
+    t.classList.toggle('active', (i===0 && mode==='login') || (i===1 && mode==='register'))
+  );
   document.getElementById('auth-btn').textContent = mode === 'login' ? '로그인' : '회원가입';
   document.getElementById('auth-error').textContent = '';
 }
@@ -423,97 +428,108 @@ function doAuth() {
   if (!nickname || !password) { showAuthErr('닉네임과 비밀번호를 입력하세요.'); return; }
   socket.emit(authMode === 'login' ? 'login' : 'register', { nickname, password });
 }
-document.getElementById('auth-pw').addEventListener('keydown', e => { if(e.key==='Enter') doAuth(); });
-document.getElementById('auth-nick').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('auth-pw').focus(); });
+document.getElementById('auth-pw').addEventListener('keydown', e => { if (e.key === 'Enter') doAuth(); });
+document.getElementById('auth-nick').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('auth-pw').focus(); });
 function showAuthErr(msg) { document.getElementById('auth-error').textContent = msg; }
 
 socket.on('auth error', msg => showAuthErr(msg));
 
 socket.on('login success', data => {
-  me = { ...data };
+  me = Object.assign({}, data, { x: TOWN_X, y: TOWN_Y }); // 위치 항상 타운
   document.getElementById('auth-screen').style.display = 'none';
   document.getElementById('game-screen').style.display = 'flex';
   resizeCanvas();
   updateHUD();
-  camX = me.x - canvas.width / 2;
+  camX = me.x - canvas.width  / 2;
   camY = me.y - canvas.height / 2;
   requestAnimationFrame(gameLoop);
 });
 
-// ── 도형 그리기 ──
-function drawShape(ctx, shape, x, y, size, color, alpha = 1, filled = false) {
+// ══════════════════════════════════════
+//  도형 그리기
+// ══════════════════════════════════════
+function drawShape(ctx, shape, x, y, size, color, alpha, filled) {
+  alpha  = alpha  !== undefined ? alpha  : 1;
+  filled = filled !== undefined ? filled : false;
   ctx.save();
   ctx.globalAlpha = alpha;
   ctx.strokeStyle = color;
-  ctx.fillStyle = color + '28';
-  ctx.lineWidth = 2;
+  ctx.fillStyle   = color + '28';
+  ctx.lineWidth   = 2;
   ctx.shadowColor = color;
-  ctx.shadowBlur = filled ? 8 : 12;
+  ctx.shadowBlur  = filled ? 8 : 12;
   ctx.beginPath();
-  switch(shape) {
-    case 'circle': ctx.arc(x, y, size/2, 0, Math.PI*2); break;
+  switch (shape) {
+    case 'circle':
+      ctx.arc(x, y, size / 2, 0, Math.PI * 2);
+      break;
     case 'triangle': {
-      const h = size * 0.866;
-      ctx.moveTo(x, y - size*0.577);
-      ctx.lineTo(x + size/2, y + h*0.423);
-      ctx.lineTo(x - size/2, y + h*0.423);
-      ctx.closePath(); break;
+      var h = size * 0.866;
+      ctx.moveTo(x, y - size * 0.577);
+      ctx.lineTo(x + size / 2, y + h * 0.423);
+      ctx.lineTo(x - size / 2, y + h * 0.423);
+      ctx.closePath();
+      break;
     }
     case 'square': {
-      const s2 = size/2;
-      ctx.rect(x - s2, y - s2, size, size); break;
+      var s2 = size / 2;
+      ctx.rect(x - s2, y - s2, size, size);
+      break;
     }
-    case 'pentagon': drawPoly(ctx, x, y, size/2, 5, -90); break;
-    case 'hexagon': drawPoly(ctx, x, y, size/2, 6, 0); break;
-    case 'star': drawStar(ctx, x, y, size/2, size/4, 5); break;
-    default: ctx.arc(x, y, size/2, 0, Math.PI*2);
+    case 'pentagon': drawPoly(ctx, x, y, size / 2, 5, -90);   break;
+    case 'hexagon':  drawPoly(ctx, x, y, size / 2, 6, 0);     break;
+    case 'star':     drawStar(ctx, x, y, size / 2, size / 4, 5); break;
+    default:         ctx.arc(x, y, size / 2, 0, Math.PI * 2);
   }
   if (filled) ctx.fill();
   ctx.stroke();
   ctx.restore();
 }
 function drawPoly(ctx, cx, cy, r, sides, startAngle) {
-  for (let i = 0; i <= sides; i++) {
-    const a = (i * 360/sides + startAngle) * Math.PI/180;
-    i === 0 ? ctx.moveTo(cx + r*Math.cos(a), cy + r*Math.sin(a)) : ctx.lineTo(cx + r*Math.cos(a), cy + r*Math.sin(a));
+  for (var i = 0; i <= sides; i++) {
+    var a = (i * 360 / sides + startAngle) * Math.PI / 180;
+    if (i === 0) ctx.moveTo(cx + r * Math.cos(a), cy + r * Math.sin(a));
+    else         ctx.lineTo(cx + r * Math.cos(a), cy + r * Math.sin(a));
   }
   ctx.closePath();
 }
 function drawStar(ctx, cx, cy, outerR, innerR, points) {
-  for (let i = 0; i <= points*2; i++) {
-    const r = i % 2 === 0 ? outerR : innerR;
-    const a = (i * 180/points - 90) * Math.PI/180;
-    i === 0 ? ctx.moveTo(cx + r*Math.cos(a), cy + r*Math.sin(a)) : ctx.lineTo(cx + r*Math.cos(a), cy + r*Math.sin(a));
+  for (var i = 0; i <= points * 2; i++) {
+    var r = i % 2 === 0 ? outerR : innerR;
+    var a = (i * 180 / points - 90) * Math.PI / 180;
+    if (i === 0) ctx.moveTo(cx + r * Math.cos(a), cy + r * Math.sin(a));
+    else         ctx.lineTo(cx + r * Math.cos(a), cy + r * Math.sin(a));
   }
   ctx.closePath();
 }
 
-// ── 몬스터 AI 업데이트 (클라이언트 시뮬레이션) ──
+// ══════════════════════════════════════
+//  몬스터 클라이언트 AI
+// ══════════════════════════════════════
+function initMonsterAI(m) {
+  if (monsterAI[m.uid]) return;
+  monsterAI[m.uid] = {
+    state:       'wander',
+    wanderPhase: 'idle',
+    spawnX:      m.x, spawnY: m.y,
+    tx: m.x, ty: m.y,
+    wanderTimer: 500 + Math.random() * 1500,
+    aggroTimer:  0,
+  };
+}
 
 function updateMonsterAI(dt) {
   if (!me || me.hp <= 0) return;
-  const now = Date.now();
-
-  for (const m of Object.values(allMonsters)) {
+  var monsters = Object.values(allMonsters);
+  for (var i = 0; i < monsters.length; i++) {
+    var m = monsters[i];
     if (!m.alive) continue;
-
-    // AI 초기화
-    if (!monsterAI[m.uid]) {
-      monsterAI[m.uid] = {
-        state: 'wander',
-        wanderPhase: 'idle',
-        spawnX: m.x, spawnY: m.y,
-        tx: m.x, ty: m.y,
-        wanderTimer: 500 + Math.random() * 1500,
-        aggroTimer: 0,
-      };
-    }
-    const ai = monsterAI[m.uid];
-
-    const distToPlayer = Math.hypot(me.x - m.x, me.y - m.y);
+    initMonsterAI(m);
+    var ai = monsterAI[m.uid];
+    var distToPlayer = Math.hypot(me.x - m.x, me.y - m.y);
 
     // 상태 전환
-    if (distToPlayer < CLI_DETECT_RANGE && me.hp > 0) {
+    if (distToPlayer < CLI_DETECT_RANGE) {
       ai.state = 'chase';
       ai.aggroTimer = 3000;
     } else {
@@ -522,38 +538,35 @@ function updateMonsterAI(dt) {
     }
 
     if (ai.state === 'chase') {
-      const dx = me.x - m.x;
-      const dy = me.y - m.y;
-      const dist = Math.hypot(dx, dy);
-      if (dist > CLI_CONTACT_RANGE) {
-        const spd = CLI_CHASE_SPEED * (dt / 16);
+      var dx = me.x - m.x, dy = me.y - m.y;
+      var dist = Math.hypot(dx, dy);
+      if (dist > CLI_CONTACT_RANGE && dist > 0) {
+        var spd = CLI_CHASE_SPEED * (dt / 16);
         m.x += (dx / dist) * spd;
         m.y += (dy / dist) * spd;
       }
     } else {
-      // 배회: idle → move → idle ...
+      // 배회: idle -> (목적지 설정) -> move -> 도착 -> idle
       ai.wanderTimer -= dt;
-
       if (ai.wanderPhase === 'idle') {
         if (ai.wanderTimer <= 0) {
-          const angle = Math.random() * Math.PI * 2;
-          const r = 40 + Math.random() * CLI_WANDER_RANGE;
+          var angle = Math.random() * Math.PI * 2;
+          var r = 40 + Math.random() * CLI_WANDER_RANGE;
           ai.tx = Math.max(50, Math.min(MAP_W - 50, ai.spawnX + Math.cos(angle) * r));
           ai.ty = Math.max(50, Math.min(MAP_H - 50, ai.spawnY + Math.sin(angle) * r));
           ai.wanderPhase = 'move';
           ai.wanderTimer = 0;
         }
       } else {
-        const dx = ai.tx - m.x;
-        const dy = ai.ty - m.y;
-        const dist = Math.hypot(dx, dy);
-        if (dist > 6) {
-          const spd = CLI_WANDER_SPEED * (dt / 16);
-          m.x += (dx / dist) * spd;
-          m.y += (dy / dist) * spd;
+        var wdx = ai.tx - m.x, wdy = ai.ty - m.y;
+        var wdist = Math.hypot(wdx, wdy);
+        if (wdist > 3) {
+          var wspd = CLI_WANDER_SPEED * (dt / 16);
+          var move = Math.min(wspd, wdist); // 목적지 오버슛 방지
+          m.x += (wdx / wdist) * move;
+          m.y += (wdy / wdist) * move;
         } else {
-          m.x = ai.tx;
-          m.y = ai.ty;
+          m.x = ai.tx; m.y = ai.ty;
           ai.wanderPhase = 'idle';
           ai.wanderTimer = 800 + Math.random() * 600;
         }
@@ -562,64 +575,99 @@ function updateMonsterAI(dt) {
   }
 }
 
+// ══════════════════════════════════════
+//  타겟 선택 + 전투 UI
+// ══════════════════════════════════════
+function updateTargetSelection() {
+  if (!me) return;
 
-// ── 클릭: 몬스터 공격 ──
-canvas.addEventListener('click', e => {
-  if (!me || me.hp <= 0) return;
-  const rect = canvas.getBoundingClientRect();
-  const wx = e.clientX - rect.left + camX;
-  const wy = e.clientY - rect.top + camY;
+  // 유효하지 않은 타겟 정리
+  if (targetMonster  && !allMonsters[targetMonster.uid])  targetMonster  = null;
+  if (nearestMonster && !allMonsters[nearestMonster.uid]) nearestMonster = null;
 
-  // 클릭 위치에 몬스터 있는지 확인
-  let clicked = null;
-  let closestDist = Infinity;
-  for (const m of Object.values(allMonsters)) {
+  // 범위 내 가장 가까운 몹 자동 선택
+  var closest = null, closestDist = AUTO_SELECT_RANGE;
+  var mArr = Object.values(allMonsters);
+  for (var i = 0; i < mArr.length; i++) {
+    var m = mArr[i];
     if (!m.alive) continue;
-    const d = Math.hypot(wx - m.x, wy - m.y);
-    if (d < 22 && d < closestDist) { clicked = m; closestDist = d; }
+    var d = Math.hypot(me.x - m.x, me.y - m.y);
+    if (d < closestDist) { closestDist = d; closest = m; }
   }
-  if (!clicked) return;
+  nearestMonster = closest;
 
-  // 플레이어와 몬스터 거리 체크
-  const distToMob = Math.hypot(me.x - clicked.x, me.y - clicked.y);
+  // 표시 타겟: 수동 선택 우선, 없으면 자동
+  var disp = targetMonster || nearestMonster;
+  var ci = document.getElementById('combat-info');
+  if (disp && allMonsters[disp.uid]) {
+    var dm = allMonsters[disp.uid];
+    ci.style.display = 'flex';
+    document.getElementById('ci-name').textContent    = dm.name;
+    var hpPct = dm.maxHp > 0 ? (dm.hp / dm.maxHp * 100) : 0;
+    document.getElementById('ci-hpfill').style.width  = hpPct + '%';
+    document.getElementById('ci-hptext').textContent  = dm.hp + ' / ' + dm.maxHp;
+    var dmAI = monsterAI[dm.uid];
+    document.getElementById('ci-name').style.color =
+      (dmAI && dmAI.state === 'chase') ? 'var(--danger)' : 'var(--text)';
+  } else {
+    ci.style.display = 'none';
+  }
+}
+
+function getAttackTarget() {
+  if (targetMonster  && allMonsters[targetMonster.uid])  return targetMonster;
+  if (nearestMonster && allMonsters[nearestMonster.uid]) return nearestMonster;
+  return null;
+}
+
+// ══════════════════════════════════════
+//  캔버스 클릭
+// ══════════════════════════════════════
+canvas.addEventListener('click', function(e) {
+  if (!me || me.hp <= 0) return;
+  var rect = canvas.getBoundingClientRect();
+  var wx = e.clientX - rect.left + camX;
+  var wy = e.clientY - rect.top  + camY;
+
+  var clicked = null, clickDist = Infinity;
+  var mArr = Object.values(allMonsters);
+  for (var i = 0; i < mArr.length; i++) {
+    var m = mArr[i];
+    if (!m.alive) continue;
+    var d = Math.hypot(wx - m.x, wy - m.y);
+    if (d < 26 && d < clickDist) { clicked = m; clickDist = d; }
+  }
+
+  if (!clicked) {
+    targetMonster = null;
+    return;
+  }
+
+  targetMonster = clicked;
+
+  var distToMob = Math.hypot(me.x - clicked.x, me.y - clicked.y);
   if (distToMob > ATTACK_RANGE) {
     addSysMsg('[공격] 몬스터에게 더 가까이 가세요!');
     return;
   }
 
-  const now = Date.now();
+  var now = Date.now();
   if (now - lastAttackTime < ATTACK_COOLDOWN) return;
   lastAttackTime = now;
   socket.emit('attack monster', { uid: clicked.uid, action: 'attack' });
-  nearestMonster = clicked;
 });
 
-// 타겟 정보 표시용 (클릭한 몬스터 추적)
-function updateTargetUI() {
-  if (!nearestMonster || !allMonsters[nearestMonster.uid]) {
-    document.getElementById('combat-info').style.display = 'none';
-    nearestMonster = null;
-    return;
-  }
-  const m = allMonsters[nearestMonster.uid];
-  const ci = document.getElementById('combat-info');
-  ci.style.display = 'flex';
-  document.getElementById('ci-name').textContent = m.name;
-  document.getElementById('ci-hpfill').style.width = (m.hp / m.maxHp * 100) + '%';
-  document.getElementById('ci-hptext').textContent = `${m.hp} / ${m.maxHp}`;
-  const ai = monsterAI[m.uid];
-  document.getElementById('ci-name').style.color = (ai && ai.state === 'chase') ? 'var(--danger)' : 'var(--text)';
-}
-
-// ── 게임 루프 ──
-let lastTime = 0;
+// ══════════════════════════════════════
+//  게임 루프
+// ══════════════════════════════════════
+var lastTime = 0;
 function gameLoop(ts) {
   if (!me) return;
-  const dt = Math.min(ts - lastTime, 50); // max 50ms cap
+  var dt = Math.min(ts - lastTime, 50);
   lastTime = ts;
   handleMovement(dt);
   updateMonsterAI(dt);
-  updateTargetUI();
+  updateTargetSelection();
   render();
   renderMinimap();
   requestAnimationFrame(gameLoop);
@@ -627,7 +675,7 @@ function gameLoop(ts) {
 
 function handleMovement(dt) {
   if (!me || me.hp <= 0) return;
-  let dx = 0, dy = 0;
+  var dx = 0, dy = 0;
   if (keysDown['ArrowLeft']  || keysDown['a'] || keysDown['A']) dx -= SPEED;
   if (keysDown['ArrowRight'] || keysDown['d'] || keysDown['D']) dx += SPEED;
   if (keysDown['ArrowUp']    || keysDown['w'] || keysDown['W']) dy -= SPEED;
@@ -637,24 +685,24 @@ function handleMovement(dt) {
     me.x = Math.max(20, Math.min(MAP_W - 20, me.x + dx));
     me.y = Math.max(20, Math.min(MAP_H - 20, me.y + dy));
     socket.emit('move', { x: me.x, y: me.y });
-    const dDist = Math.hypot(me.x - DUNGEON_X, me.y - DUNGEON_Y);
-    if (dDist < DUNGEON_R + 10) addSysMsg('[던전 입구] 던전 시스템은 다음 업데이트 예정입니다!');
+    if (Math.hypot(me.x - DUNGEON_X, me.y - DUNGEON_Y) < DUNGEON_R + 10)
+      addSysMsg('[던전 입구] 던전 시스템은 다음 업데이트 예정입니다!');
   }
-  // 부드러운 카메라
-  camX += (me.x - canvas.width/2 - camX) * 0.1;
-  camY += (me.y - canvas.height/2 - camY) * 0.1;
+  camX += (me.x - canvas.width  / 2 - camX) * 0.1;
+  camY += (me.y - canvas.height / 2 - camY) * 0.1;
 }
 
-// ── 렌더링 (뷰포트 컬링 적용) ──
+// ══════════════════════════════════════
+//  렌더링
+// ══════════════════════════════════════
 function isInViewport(wx, wy, margin) {
-  const sx = wx - camX;
-  const sy = wy - camY;
-  return sx > -margin && sx < canvas.width + margin &&
+  var sx = wx - camX, sy = wy - camY;
+  return sx > -margin && sx < canvas.width  + margin &&
          sy > -margin && sy < canvas.height + margin;
 }
 
 function render() {
-  const W = canvas.width, H = canvas.height;
+  var W = canvas.width, H = canvas.height;
   ctx.clearRect(0, 0, W, H);
 
   // 배경
@@ -664,548 +712,496 @@ function render() {
   // 그리드
   ctx.strokeStyle = 'rgba(26,34,53,0.6)';
   ctx.lineWidth = 1;
-  const gs = 80;
-  const ox = (-camX) % gs, oy = (-camY) % gs;
-  for (let x = ox; x < W; x += gs) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
-  for (let y = oy; y < H; y += gs) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+  var gs = 80;
+  var ox = (-camX) % gs, oy = (-camY) % gs;
+  for (var gx = ox; gx < W; gx += gs) { ctx.beginPath(); ctx.moveTo(gx,0); ctx.lineTo(gx,H); ctx.stroke(); }
+  for (var gy = oy; gy < H; gy += gs) { ctx.beginPath(); ctx.moveTo(0,gy); ctx.lineTo(W,gy); ctx.stroke(); }
 
   // 맵 경계
-  ctx.strokeStyle = '#1a2235';
-  ctx.lineWidth = 2;
+  ctx.strokeStyle = '#1a2235'; ctx.lineWidth = 2;
   ctx.strokeRect(-camX, -camY, MAP_W, MAP_H);
 
-  // 마을 영역
-  ctx.save();
-  ctx.globalAlpha = 0.07;
-  ctx.fillStyle = '#4ecdc4';
-  ctx.beginPath();
-  ctx.arc(TOWN_X - camX, TOWN_Y - camY, 200, 0, Math.PI*2);
-  ctx.fill();
-  ctx.restore();
-  ctx.save();
-  ctx.globalAlpha = 0.3;
-  ctx.strokeStyle = '#4ecdc4';
-  ctx.lineWidth = 1;
-  ctx.setLineDash([4, 8]);
-  ctx.beginPath();
-  ctx.arc(TOWN_X - camX, TOWN_Y - camY, 200, 0, Math.PI*2);
-  ctx.stroke();
-  ctx.setLineDash([]);
-  ctx.restore();
+  // 마을
+  var twx = TOWN_X - camX, twy = TOWN_Y - camY;
+  ctx.save(); ctx.globalAlpha = 0.07; ctx.fillStyle = '#4ecdc4';
+  ctx.beginPath(); ctx.arc(twx, twy, 200, 0, Math.PI*2); ctx.fill(); ctx.restore();
+  ctx.save(); ctx.globalAlpha = 0.3; ctx.strokeStyle = '#4ecdc4';
+  ctx.lineWidth = 1; ctx.setLineDash([4,8]);
+  ctx.beginPath(); ctx.arc(twx, twy, 200, 0, Math.PI*2); ctx.stroke();
+  ctx.setLineDash([]); ctx.restore();
   ctx.fillStyle = 'rgba(78,205,196,0.5)';
-  ctx.font = '11px Rajdhani, sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('TOWN', TOWN_X - camX, TOWN_Y - camY - 210);
+  ctx.font = '11px Rajdhani, sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('TOWN', twx, twy - 210);
 
   // 던전
-  const dungX = DUNGEON_X - camX, dungY = DUNGEON_Y - camY;
+  var dungX = DUNGEON_X - camX, dungY = DUNGEON_Y - camY;
+  ctx.save(); ctx.globalAlpha = 0.1; ctx.fillStyle = '#ff4455';
+  ctx.beginPath(); ctx.arc(dungX, dungY, DUNGEON_R, 0, Math.PI*2); ctx.fill(); ctx.restore();
   ctx.save();
-  ctx.globalAlpha = 0.1;
-  ctx.fillStyle = '#ff4455';
-  ctx.beginPath();
-  ctx.arc(dungX, dungY, DUNGEON_R, 0, Math.PI*2);
-  ctx.fill();
-  ctx.restore();
-  ctx.save();
-  const t = Date.now() / 1000;
-  ctx.globalAlpha = 0.4 + Math.sin(t*2)*0.2;
-  ctx.strokeStyle = '#ff4455';
-  ctx.lineWidth = 2;
-  ctx.setLineDash([4, 6]);
-  ctx.beginPath();
-  ctx.arc(dungX, dungY, DUNGEON_R, 0, Math.PI*2);
-  ctx.stroke();
-  ctx.setLineDash([]);
-  ctx.restore();
+  ctx.globalAlpha = 0.4 + Math.sin(Date.now() / 500) * 0.2;
+  ctx.strokeStyle = '#ff4455'; ctx.lineWidth = 2; ctx.setLineDash([4,6]);
+  ctx.beginPath(); ctx.arc(dungX, dungY, DUNGEON_R, 0, Math.PI*2); ctx.stroke();
+  ctx.setLineDash([]); ctx.restore();
   ctx.fillStyle = 'rgba(255,68,85,0.7)';
-  ctx.font = 'bold 12px Rajdhani, sans-serif';
-  ctx.textAlign = 'center';
+  ctx.font = 'bold 12px Rajdhani, sans-serif'; ctx.textAlign = 'center';
   ctx.fillText('DUNGEON', dungX, dungY - DUNGEON_R - 8);
   drawShape(ctx, 'hexagon', dungX, dungY, 36, '#ff4455', 0.6);
 
-  // ── 몬스터 렌더링 (뷰포트 컬링) ──
-  for (const m of Object.values(allMonsters)) {
-    const mx = m.x - camX, my = m.y - camY;
+  // 현재 표시 타겟
+  var dispTarget = targetMonster || nearestMonster;
 
-    // 뷰포트 컬링 - 화면 밖 몹 스킵
+  // 몬스터 렌더링
+  var mArr = Object.values(allMonsters);
+  for (var mi = 0; mi < mArr.length; mi++) {
+    var m = mArr[mi];
     if (!isInViewport(m.x, m.y, CULL_MARGIN)) continue;
+    var mx = m.x - camX, my = m.y - camY;
+    var ai = monsterAI[m.uid];
+    var isChasing  = ai && ai.state === 'chase';
+    var isSelected = dispTarget && dispTarget.uid === m.uid;
 
-    const ai = monsterAI[m.uid];
-    const isChasing = ai && ai.state === 'chase';
-    const isNearest = nearestMonster && nearestMonster.uid === m.uid;
-
-    // 어그로 상태 글로우
     if (isChasing) {
-      ctx.save();
-      ctx.globalAlpha = 0.15;
-      ctx.fillStyle = '#ff4455';
-      ctx.beginPath();
-      ctx.arc(mx, my, 32, 0, Math.PI*2);
-      ctx.fill();
-      ctx.restore();
+      ctx.save(); ctx.globalAlpha = 0.15; ctx.fillStyle = '#ff4455';
+      ctx.beginPath(); ctx.arc(mx, my, 32, 0, Math.PI*2); ctx.fill(); ctx.restore();
     }
-
-    // 가장 가까운 몹 선택 표시
-    if (isNearest && Math.hypot(me.x - m.x, me.y - m.y) < ATTACK_RANGE * 1.5) {
+    if (isSelected) {
       ctx.save();
-      ctx.globalAlpha = 0.25 + Math.sin(Date.now() / 300) * 0.1;
+      ctx.globalAlpha = 0.3 + Math.sin(Date.now() / 250) * 0.1;
       ctx.strokeStyle = isChasing ? '#ff4455' : '#00c8f0';
-      ctx.lineWidth = 1.5;
-      ctx.setLineDash([3, 4]);
-      ctx.beginPath();
-      ctx.arc(mx, my, 20, 0, Math.PI*2);
-      ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.restore();
+      ctx.lineWidth = 2; ctx.setLineDash([4,4]);
+      ctx.beginPath(); ctx.arc(mx, my, 22, 0, Math.PI*2); ctx.stroke();
+      ctx.setLineDash([]); ctx.restore();
     }
 
-    drawShape(ctx, m.shape, mx, my, isChasing ? 28 : 24, isChasing ? '#ff6644' : m.color, isChasing ? 1 : 0.85);
+    var mColor = isChasing ? '#ff6644' : m.color;
+    var mSize  = isChasing ? 28 : 24;
+    var mAlpha = isChasing ? 1 : 0.85;
+    drawShape(ctx, m.shape, mx, my, mSize, mColor, mAlpha);
 
     // HP바
-    const bw = 34, bh = 4, bx = mx - bw/2, by = my - 22;
-    ctx.fillStyle = 'rgba(0,0,0,0.5)';
-    ctx.fillRect(bx, by, bw, bh);
-    const hpRatio = m.hp / m.maxHp;
-    ctx.fillStyle = hpRatio > 0.5 ? m.color : hpRatio > 0.25 ? '#ffd93d' : '#ff4455';
-    ctx.fillRect(bx, by, bw * hpRatio, bh);
+    var bw = 34, bh = 4, bx = mx - bw/2, by = my - 22;
+    ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(bx, by, bw, bh);
+    var hpR = m.maxHp > 0 ? m.hp / m.maxHp : 0;
+    ctx.fillStyle = hpR > 0.5 ? m.color : (hpR > 0.25 ? '#ffd93d' : '#ff4455');
+    ctx.fillRect(bx, by, bw * hpR, bh);
 
-    // 이름
-    ctx.fillStyle = isChasing ? '#ff8877aa' : m.color + 'aa';
-    ctx.font = '10px Noto Sans KR, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(isChasing ? `⚔ ${m.name}` : m.name, mx, my + 22);
+    ctx.fillStyle = isChasing ? 'rgba(255,136,119,0.7)' : m.color + 'aa';
+    ctx.font = '10px Noto Sans KR, sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(isChasing ? '\u2694 ' + m.name : m.name, mx, my + 22);
   }
 
-  // ── 다른 플레이어 (뷰포트 컬링) ──
-  for (const [id, p] of Object.entries(allPlayers)) {
-    if (id === socket.id) continue;
-    if (!isInViewport(p.x, p.y, CULL_MARGIN)) continue;
-    const px = p.x - camX, py = p.y - camY;
-    drawShape(ctx, p.shape, px, py, 24, p.color, 0.9, true);
-    ctx.fillStyle = p.color + 'cc';
-    ctx.font = '11px Rajdhani, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(p.nickname, px, py - 18);
-    ctx.fillStyle = p.color + '55';
-    ctx.font = '10px sans-serif';
-    ctx.fillText(`Lv.${p.level}`, px, py + 22);
+  // 다른 플레이어
+  var pArr = Object.entries(allPlayers);
+  for (var pi = 0; pi < pArr.length; pi++) {
+    var pid = pArr[pi][0], p = pArr[pi][1];
+    if (pid === socket.id || !isInViewport(p.x, p.y, CULL_MARGIN)) continue;
+    var ppx = p.x - camX, ppy = p.y - camY;
+    drawShape(ctx, p.shape, ppx, ppy, 24, p.color, 0.9, true);
+    ctx.fillStyle = p.color + 'cc'; ctx.font = '11px Rajdhani, sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(p.nickname, ppx, ppy - 18);
+    ctx.fillStyle = p.color + '55'; ctx.font = '10px sans-serif';
+    ctx.fillText('Lv.' + p.level, ppx, ppy + 22);
   }
 
-  // ── 내 캐릭터 ──
+  // 내 캐릭터
   if (me) {
-    const px = me.x - camX, py = me.y - camY;
-
-    // 공격 범위 표시 (투명)
-    if (nearestMonster && Math.hypot(me.x - nearestMonster.x, me.y - nearestMonster.y) < ATTACK_RANGE * 1.5) {
-      ctx.save();
-      ctx.globalAlpha = 0.04;
-      ctx.fillStyle = me.color;
-      ctx.beginPath();
-      ctx.arc(px, py, ATTACK_RANGE * 0.75, 0, Math.PI*2);
-      ctx.fill();
-      ctx.restore();
-    }
-
-    drawShape(ctx, me.shape, px, py, 28, me.color, 1, true);
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 12px Rajdhani, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(me.nickname, px, py - 20);
-
+    var mpx = me.x - camX, mpy = me.y - camY;
+    drawShape(ctx, me.shape, mpx, mpy, 28, me.color, 1, true);
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 12px Rajdhani, sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(me.nickname, mpx, mpy - 20);
     if (me.hp <= 0) {
-      ctx.save();
-      ctx.globalAlpha = 0.5;
-      ctx.fillStyle = '#ff4455';
-      ctx.font = '16px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('X', px, py + 6);
-      ctx.restore();
+      ctx.save(); ctx.globalAlpha = 0.6; ctx.fillStyle = '#ff4455';
+      ctx.font = '18px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('X', mpx, mpy + 6); ctx.restore();
     }
   }
 }
 
 function renderMinimap() {
-  const mw = 120, mh = 90;
+  var mw = 120, mh = 90;
   mmCtx.clearRect(0, 0, mw, mh);
-  mmCtx.fillStyle = 'rgba(7,9,13,0.9)';
-  mmCtx.fillRect(0, 0, mw, mh);
-  const scaleX = mw / MAP_W, scaleY = mh / MAP_H;
+  mmCtx.fillStyle = 'rgba(7,9,13,0.9)'; mmCtx.fillRect(0, 0, mw, mh);
+  var scX = mw / MAP_W, scY = mh / MAP_H;
   mmCtx.fillStyle = 'rgba(78,205,196,0.25)';
-  mmCtx.beginPath();
-  mmCtx.arc(TOWN_X*scaleX, TOWN_Y*scaleY, 10, 0, Math.PI*2);
-  mmCtx.fill();
+  mmCtx.beginPath(); mmCtx.arc(TOWN_X*scX, TOWN_Y*scY, 10, 0, Math.PI*2); mmCtx.fill();
   mmCtx.fillStyle = 'rgba(255,68,85,0.25)';
-  mmCtx.beginPath();
-  mmCtx.arc(DUNGEON_X*scaleX, DUNGEON_Y*scaleY, 5, 0, Math.PI*2);
-  mmCtx.fill();
-  // 몬스터 (미니맵은 전체 표시 - 점이라 비용 저렴)
-  for (const m of Object.values(allMonsters)) {
-    const ai = monsterAI[m.uid];
-    mmCtx.fillStyle = (ai && ai.state === 'chase') ? 'rgba(255,68,85,0.8)' : 'rgba(255,100,100,0.4)';
-    mmCtx.fillRect(m.x*scaleX - 1, m.y*scaleY - 1, 2, 2);
+  mmCtx.beginPath(); mmCtx.arc(DUNGEON_X*scX, DUNGEON_Y*scY, 5, 0, Math.PI*2); mmCtx.fill();
+  var mmArr = Object.values(allMonsters);
+  for (var i = 0; i < mmArr.length; i++) {
+    var mm = mmArr[i];
+    var mmai = monsterAI[mm.uid];
+    mmCtx.fillStyle = (mmai && mmai.state === 'chase') ? 'rgba(255,68,85,0.8)' : 'rgba(255,100,100,0.4)';
+    mmCtx.fillRect(mm.x*scX - 1, mm.y*scY - 1, 2, 2);
   }
-  for (const [id, p] of Object.entries(allPlayers)) {
-    if (id === socket.id) continue;
-    mmCtx.fillStyle = p.color + 'aa';
-    mmCtx.fillRect(p.x*scaleX - 2, p.y*scaleY - 2, 4, 4);
+  var mpArr = Object.entries(allPlayers);
+  for (var j = 0; j < mpArr.length; j++) {
+    if (mpArr[j][0] === socket.id) continue;
+    var pp = mpArr[j][1];
+    mmCtx.fillStyle = pp.color + 'aa';
+    mmCtx.fillRect(pp.x*scX - 2, pp.y*scY - 2, 4, 4);
   }
-  if (me) {
-    mmCtx.fillStyle = '#fff';
-    mmCtx.fillRect(me.x*scaleX - 2.5, me.y*scaleY - 2.5, 5, 5);
-  }
-  mmCtx.strokeStyle = 'rgba(0,200,240,0.3)';
-  mmCtx.lineWidth = 1;
-  mmCtx.strokeRect(camX*scaleX, camY*scaleY, canvas.width*scaleX, canvas.height*scaleY);
+  if (me) { mmCtx.fillStyle = '#fff'; mmCtx.fillRect(me.x*scX - 2.5, me.y*scY - 2.5, 5, 5); }
+  mmCtx.strokeStyle = 'rgba(0,200,240,0.3)'; mmCtx.lineWidth = 1;
+  mmCtx.strokeRect(camX*scX, camY*scY, canvas.width*scX, canvas.height*scY);
 }
 
-// ── 키보드 ──
-window.addEventListener('keydown', e => {
+// ══════════════════════════════════════
+//  키보드
+// ══════════════════════════════════════
+window.addEventListener('keydown', function(e) {
+  if (document.activeElement === document.getElementById('chat-input')) return;
   keysDown[e.key] = true;
 
-  // 스킬 (F)
   if (e.key === 'f' || e.key === 'F') {
-    const now = Date.now();
-    if (nearestMonster && allMonsters[nearestMonster.uid] && now - lastSkillTime > SKILL_COOLDOWN) {
-      const dist = Math.hypot(me.x - nearestMonster.x, me.y - nearestMonster.y);
-      if (dist < ATTACK_RANGE) {
-        lastSkillTime = now;
-        socket.emit('attack monster', { uid: nearestMonster.uid, action: 'skill' });
-      } else {
-        addSysMsg('[스킬] 몬스터에게 더 가까이 가세요!');
-      }
-    } else if (!nearestMonster) {
-      addSysMsg('[스킬] 먼저 몬스터를 클릭하세요!');
-    }
+    e.preventDefault();
+    if (!me || me.hp <= 0) return;
+    var tgt = getAttackTarget();
+    var now = Date.now();
+    if (!tgt) { addSysMsg('[스킬] 범위 내 몬스터가 없습니다!'); return; }
+    if (now - lastSkillTime < SKILL_COOLDOWN) return;
+    var dist = Math.hypot(me.x - tgt.x, me.y - tgt.y);
+    if (dist > ATTACK_RANGE) { addSysMsg('[스킬] 몬스터에게 더 가까이 가세요!'); return; }
+    lastSkillTime = now;
+    socket.emit('attack monster', { uid: tgt.uid, action: 'skill' });
   }
 
-  // 힐 (H)
   if (e.key === 'h' || e.key === 'H') {
+    e.preventDefault();
     socket.emit('heal');
   }
 
-  // 채팅창 포커스 방지
-  if (e.key === 'Enter' && document.activeElement !== document.getElementById('chat-input')) {
+  if (e.key === 'Enter') {
     document.getElementById('chat-input').focus();
     e.preventDefault();
   }
 });
-window.addEventListener('keyup', e => { keysDown[e.key] = false; });
+window.addEventListener('keyup', function(e) { keysDown[e.key] = false; });
 
-// ── 소켓 이벤트 ──
-socket.on('field state', ({ monsters, players }) => {
-  const prevMonsters = allMonsters;
+// ══════════════════════════════════════
+//  소켓 이벤트
+// ══════════════════════════════════════
+socket.on('field state', function(data) {
+  var monsters = data.monsters, players = data.players;
   allMonsters = {};
-  monsters.forEach(m => {
-    allMonsters[m.uid] = m;
-    m.alive = true;
-    // AI 초기화 (새 몬스터만)
-    if (!monsterAI[m.uid]) {
-      monsterAI[m.uid] = {
-        state: 'wander',
-        wanderPhase: 'idle',
-        spawnX: m.x, spawnY: m.y,
-        tx: m.x, ty: m.y,
-        wanderTimer: 500 + Math.random() * 1500,
-        aggroTimer: 0,
-      };
-    }
-  });
-  // 죽은 몹 AI 정리
-  for (const uid of Object.keys(monsterAI)) {
-    if (!allMonsters[uid]) delete monsterAI[uid];
+  for (var i = 0; i < monsters.length; i++) {
+    var m = monsters[i];
+    allMonsters[m.uid] = Object.assign({}, m, { alive: true });
+    initMonsterAI(allMonsters[m.uid]);
+  }
+  var uids = Object.keys(monsterAI);
+  for (var j = 0; j < uids.length; j++) {
+    if (!allMonsters[uids[j]]) delete monsterAI[uids[j]];
   }
   allPlayers = {};
-  players.forEach(p => allPlayers[p.id] = p);
+  for (var k = 0; k < players.length; k++) allPlayers[players[k].id] = players[k];
   updateOnlineCount();
 });
 
-socket.on('player joined', p => {
-  allPlayers[p.id] = p;
-  updateOnlineCount();
+socket.on('player joined', function(p) { allPlayers[p.id] = p; updateOnlineCount(); });
+socket.on('player left',   function(id) { delete allPlayers[id]; updateOnlineCount(); });
+socket.on('player moved',  function(data) {
+  if (allPlayers[data.id]) { allPlayers[data.id].x = data.x; allPlayers[data.id].y = data.y; }
 });
-socket.on('player left', id => {
-  delete allPlayers[id];
-  updateOnlineCount();
-});
-socket.on('player moved', ({ id, x, y }) => {
-  if (allPlayers[id]) { allPlayers[id].x = x; allPlayers[id].y = y; }
-});
-socket.on('player shape update', ({ id, shape, color, level }) => {
-  if (allPlayers[id]) { allPlayers[id].shape = shape; allPlayers[id].color = color; if(level) allPlayers[id].level = level; }
-  if (id === socket.id && me) { me.shape = shape; me.color = color; if(level) me.level = level; updateHUD(); }
+socket.on('player shape update', function(data) {
+  if (allPlayers[data.id]) {
+    allPlayers[data.id].shape = data.shape; allPlayers[data.id].color = data.color;
+    if (data.level) allPlayers[data.id].level = data.level;
+  }
+  if (data.id === socket.id && me) {
+    me.shape = data.shape; me.color = data.color;
+    if (data.level) me.level = data.level;
+    updateHUD();
+  }
 });
 
-socket.on('combat result', data => {
+socket.on('monster positions', function(positions) {
+  for (var i = 0; i < positions.length; i++) {
+    var pos = positions[i];
+    var m = allMonsters[pos.uid];
+    if (!m) continue;
+    var err = Math.hypot(pos.x - m.x, pos.y - m.y);
+    if (err > 80) {
+      m.x = pos.x; m.y = pos.y;
+    } else {
+      m.x += (pos.x - m.x) * 0.15;
+      m.y += (pos.y - m.y) * 0.15;
+    }
+    m.hp = pos.hp;
+    if (monsterAI[pos.uid]) monsterAI[pos.uid].state = pos.state;
+  }
+});
+
+socket.on('monsters spawned', function(monsters) {
+  for (var i = 0; i < monsters.length; i++) {
+    var m = monsters[i];
+    if (!allMonsters[m.uid]) {
+      allMonsters[m.uid] = Object.assign({}, m, { alive: true });
+      initMonsterAI(allMonsters[m.uid]);
+    }
+  }
+});
+
+socket.on('combat result', function(data) {
   if (allMonsters[data.monsterUid]) {
     allMonsters[data.monsterUid].hp = data.monsterHp;
-    if (nearestMonster && nearestMonster.uid === data.monsterUid) {
-      nearestMonster.hp = data.monsterHp;
-    }
+    if (targetMonster  && targetMonster.uid  === data.monsterUid) targetMonster.hp  = data.monsterHp;
+    if (nearestMonster && nearestMonster.uid === data.monsterUid) nearestMonster.hp = data.monsterHp;
   }
   if (data.attackerId === socket.id && me) {
-    me.hp = data.playerHp;
-    me.mp = data.playerMp;
-    updateHUD();
-    if (me.hp <= 0) {
-      document.getElementById('death-overlay').classList.add('show');
-    }
+    me.hp = data.playerHp; me.mp = data.playerMp; updateHUD();
+    if (me.hp <= 0) document.getElementById('death-overlay').classList.add('show');
   }
-  // 데미지 팝업
-  const m = allMonsters[data.monsterUid];
+  // 데미지 팝업: 몬스터 스크린 위치에 표시
+  var m = allMonsters[data.monsterUid];
   if (m && isInViewport(m.x, m.y, 100)) {
-    const sx = m.x - camX;
-    const sy = m.y - camY;
-    showDmgPopupAt(data.dmg, data.action === 'skill' ? '#8866ff' : '#ff7788', sx, sy - 20);
-  }
-  // 내 캐릭터 반격 팝업
-  if (data.attackerId === socket.id) {
-    const px = me.x - camX, py = me.y - camY;
-    showDmgPopupAt('-' + data.counterDmg, '#ff4455', px, py - 20);
+    showDmgPopupAt(
+      String(data.dmg),
+      data.action === 'skill' ? '#8866ff' : '#ffcc44',
+      m.x - camX, m.y - camY - 28
+    );
   }
 });
 
-socket.on('monster killed', ({ uid, killerNickname, exp, gold }) => {
+socket.on('monster killed', function(data) {
+  var uid = data.uid, killerNickname = data.killerNickname, exp = data.exp, gold = data.gold;
   if (allMonsters[uid]) {
-    // 사라지는 효과를 위해 잠깐 유지
     allMonsters[uid].alive = false;
-    setTimeout(() => { delete allMonsters[uid]; delete monsterAI[uid]; }, 300);
+    setTimeout(function() { delete allMonsters[uid]; delete monsterAI[uid]; }, 300);
   }
+  if (targetMonster  && targetMonster.uid  === uid) targetMonster  = null;
   if (nearestMonster && nearestMonster.uid === uid) nearestMonster = null;
-  addSysMsg(`[처치] ${killerNickname}이(가) 처치! +${exp}EXP +${gold}G`);
+  addSysMsg('[처치] ' + killerNickname + '이(가) 처치! +' + exp + 'EXP +' + gold + 'G');
   if (me && killerNickname === me.nickname) { me.exp += exp; me.gold += gold; me.kills++; updateHUD(); }
 });
 
-socket.on('healed', ({ hp, maxHp, mp, maxMp, amt }) => {
-  if (me) { me.hp = hp; me.maxHp = maxHp; me.mp = mp; me.maxMp = maxMp; updateHUD(); }
-  const px = me.x - camX, py = me.y - camY;
-  showDmgPopupAt('+' + amt, '#3dffaa', px, py - 30);
+socket.on('healed', function(data) {
+  if (me) { me.hp = data.hp; me.maxHp = data.maxHp; me.mp = data.mp; me.maxMp = data.maxMp; updateHUD(); }
+  showDmgPopupAt('+' + data.amt, '#3dffaa', me.x - camX, me.y - camY - 30);
 });
 
-// MP 자동 회복
-socket.on('mp regen', ({ mp, maxMp }) => {
+socket.on('mp regen', function(data) {
   if (!me) return;
-  me.mp = mp; me.maxMp = maxMp;
-  updateHUD();
+  me.mp = data.mp; me.maxMp = data.maxMp; updateHUD();
 });
 
-socket.on('level up', data => {
+socket.on('level up', function(data) {
   if (!me) return;
-  me.level = data.level; me.exp = data.exp;
-  me.maxHp = data.maxHp; me.hp = data.hp;
-  me.maxMp = data.maxMp; me.mp = data.mp;
-  me.atk = data.atk; me.def = data.def;
+  me.level = data.level; me.exp   = data.exp;
+  me.maxHp = data.maxHp; me.hp   = data.hp;
+  me.maxMp = data.maxMp; me.mp   = data.mp;
+  me.atk   = data.atk;   me.def  = data.def;
   me.shape = data.shape; me.color = data.color;
   updateHUD();
   showLevelUp(data.level, data.evolved ? data.evolvedName : null);
 });
 
-socket.on('revive', ({ hp, mp, x, y, gold }) => {
+socket.on('revive', function(data) {
   if (!me) return;
-  me.hp = hp; me.mp = mp; me.x = x; me.y = y; me.gold = gold;
+  me.hp = data.hp; me.mp = data.mp;
+  me.x  = data.x;  me.y  = data.y;
+  me.gold = data.gold;
   updateHUD();
   document.getElementById('death-overlay').classList.remove('show');
   addSysMsg('[부활] 마을에서 되살아났습니다.');
 });
 
-socket.on('system message', msg => addSysMsg(msg));
+socket.on('monster attack', function(data) {
+  if (!me) return;
+  me.hp = data.playerHp; me.maxHp = data.playerMaxHp; updateHUD();
+  if (me.hp <= 0) document.getElementById('death-overlay').classList.add('show');
+  showDmgPopupAt('-' + data.dmg, '#ff4455', me.x - camX, me.y - camY - 28);
+  addSysMsg('[피격] ' + data.monsterName + '이(가) ' + data.dmg + ' 데미지!');
+});
 
-socket.on('chat message', ({ nickname, message, color, time }) => {
-  const msgs = document.getElementById('messages');
-  const el = document.createElement('div');
+socket.on('system message', function(msg) { addSysMsg(msg); });
+
+socket.on('chat message', function(data) {
+  var msgs = document.getElementById('messages');
+  var el = document.createElement('div');
   el.className = 'chat-msg';
-  el.innerHTML = `<span class="chat-nick" style="color:${color}">${esc(nickname)}</span> <span style="color:var(--dim)">${time}</span><br>${esc(message)}`;
+  el.innerHTML = '<span class="chat-nick" style="color:' + data.color + '">' + esc(data.nickname) + '</span>'
+    + ' <span style="color:var(--dim)">' + data.time + '</span><br>' + esc(data.message);
   msgs.appendChild(el);
   msgs.scrollTop = msgs.scrollHeight;
 });
 
-// 몬스터 AI 위치 동기화 (서버 → 클라이언트)
-socket.on('monster positions', (positions) => {
-  for (const pos of positions) {
-    if (allMonsters[pos.uid]) {
-      // 서버 위치로 부드럽게 보간 (클라이언트 AI와 혼합)
-      const m = allMonsters[pos.uid];
-      m.x = m.x + (pos.x - m.x) * 0.3;
-      m.y = m.y + (pos.y - m.y) * 0.3;
-      m.hp = pos.hp;
-      // AI 상태 동기화
-      if (monsterAI[pos.uid]) {
-        monsterAI[pos.uid].state = pos.state;
-      }
-    }
-  }
-});
-
-// 새 몬스터 스폰
-socket.on('monsters spawned', (monsters) => {
-  for (const m of monsters) {
-    if (!allMonsters[m.uid]) {
-      allMonsters[m.uid] = { ...m, alive: true };
-      monsterAI[m.uid] = {
-        state: 'wander',
-        wanderPhase: 'idle',
-        spawnX: m.x, spawnY: m.y,
-        tx: m.x, ty: m.y,
-        wanderTimer: 500 + Math.random() * 1500,
-        aggroTimer: 0,
-      };
-    }
-  }
-});
-
-// 몬스터 공격 수신 (서버 AI가 직접 플레이어 공격)
-socket.on('monster attack', ({ monsterUid, monsterName, dmg, playerHp, playerMaxHp }) => {
+socket.on('class unlock available', function(classes) { openClassModal(classes); });
+socket.on('class chosen', function(data) {
   if (!me) return;
-  me.hp = playerHp;
-  me.maxHp = playerMaxHp;
-  updateHUD();
-  if (me.hp <= 0) {
-    document.getElementById('death-overlay').classList.add('show');
-  }
-  // 피격 팝업 (내 캐릭터 위치)
-  const px = me.x - camX, py = me.y - camY;
-  showDmgPopupAt('-' + dmg, '#ff4455', px, py - 20);
-  addSysMsg(`[피격] ${monsterName}이(가) ${dmg} 데미지!`);
+  Object.assign(me, data); updateHUD(); closeClassModal();
 });
 
-socket.on('class unlock available', classes => { openClassModal(classes); });
-socket.on('class chosen', data => {
-  if (!me) return;
-  Object.assign(me, data);
-  updateHUD();
-  closeClassModal();
-});
-
-// ── UI 업데이트 ──
+// ══════════════════════════════════════
+//  HUD
+// ══════════════════════════════════════
 function updateOnlineCount() {
-  const count = Object.keys(allPlayers).length;
-  onlineCount = count;
-  document.getElementById('chat-online').textContent = `● ${count} online`;
+  onlineCount = Object.keys(allPlayers).length;
+  document.getElementById('chat-online').textContent = '\u25CF ' + onlineCount + ' online';
 }
 
-function updateHUD() {
-  if (!me) return;
-  const classLabel = me.className ? `[${me.className}] ` : '';
-  document.getElementById('hud-name').textContent = me.nickname;
-  document.getElementById('hud-class').textContent = `${classLabel}Lv.${me.level} · ${getEvoName(me.level, me.className)}`;
-  document.getElementById('hud-shape').innerHTML = makeShapeSVG(me.shape, 28, me.color);
-  document.getElementById('hud-hp-bar').style.width = (me.hp/me.maxHp*100) + '%';
-  document.getElementById('hud-hp-val').textContent = `${me.hp}/${me.maxHp}`;
-  document.getElementById('hud-mp-bar').style.width = (me.mp/me.maxMp*100) + '%';
-  document.getElementById('hud-mp-val').textContent = `${me.mp}/${me.maxMp}`;
-  document.getElementById('hud-atk').textContent = me.atk;
-  document.getElementById('hud-def').textContent = me.def;
-  document.getElementById('hud-kills').textContent = me.kills || 0;
-  document.getElementById('hud-exp').textContent = `${me.exp}/${expForLevel(me.level)}`;
-  document.getElementById('hud-gold').textContent = `${me.gold} G`;
-}
-
-function expForLevel(lv) { return lv * 100 + (lv - 1) * 50; }
-
-const EVO_TABLE = [
-  {level:1,name:'원형체'},{level:5,name:'삼각체'},{level:10,name:'사각체'},
-  {level:18,name:'오각체'},{level:28,name:'육각체'},{level:40,name:'성형체'}
+var EVO_TABLE = [
+  { level:1, name:'\uc6d0\ud615\uccb4' }, { level:5, name:'\uc0bc\uac01\uccb4' },
+  { level:10,name:'\uc0ac\uac01\uccb4' }, { level:18,name:'\uc624\uac01\uccb4' },
+  { level:28,name:'\uc721\uac01\uccb4' }, { level:40,name:'\uc131\ud615\uccb4' },
 ];
 function getEvoName(level, cls) {
   if (cls) return cls;
-  let n = '원형체';
-  for (const e of EVO_TABLE) { if(level >= e.level) n = e.name; else break; }
+  var n = EVO_TABLE[0].name;
+  for (var i = 0; i < EVO_TABLE.length; i++) {
+    if (level >= EVO_TABLE[i].level) n = EVO_TABLE[i].name; else break;
+  }
   return n;
 }
+function expForLevel(lv) { return lv * 100 + (lv - 1) * 50; }
 
-// ── 직업 모달 ──
+function updateHUD() {
+  if (!me) return;
+  var classLabel = me.className ? '[' + me.className + '] ' : '';
+  document.getElementById('hud-name').textContent  = me.nickname;
+  document.getElementById('hud-class').textContent = classLabel + 'Lv.' + me.level + ' \u00b7 ' + getEvoName(me.level, me.className);
+  document.getElementById('hud-shape').innerHTML   = makeShapeSVG(me.shape, 28, me.color);
+  var hpPct = me.maxHp > 0 ? (me.hp / me.maxHp * 100) : 0;
+  var mpPct = me.maxMp > 0 ? (me.mp / me.maxMp * 100) : 0;
+  document.getElementById('hud-hp-bar').style.width = hpPct + '%';
+  document.getElementById('hud-hp-val').textContent = me.hp + '/' + me.maxHp;
+  document.getElementById('hud-mp-bar').style.width = mpPct + '%';
+  document.getElementById('hud-mp-val').textContent = me.mp + '/' + me.maxMp;
+  document.getElementById('hud-atk').textContent   = me.atk;
+  document.getElementById('hud-def').textContent   = me.def;
+  document.getElementById('hud-kills').textContent = me.kills || 0;
+  document.getElementById('hud-exp').textContent   = me.exp + '/' + expForLevel(me.level);
+  document.getElementById('hud-gold').textContent  = me.gold + ' G';
+}
+
+// ══════════════════════════════════════
+//  모달 / 팝업
+// ══════════════════════════════════════
 function openClassModal(classes) {
-  const grid = document.getElementById('cm-grid');
+  var grid = document.getElementById('cm-grid');
   grid.innerHTML = '';
-  classes.forEach(cls => {
-    const el = document.createElement('div');
+  for (var i = 0; i < classes.length; i++) {
+    var cls = classes[i];
+    var el = document.createElement('div');
     el.className = 'cm-card';
     el.style.borderColor = cls.color + '55';
-    el.innerHTML = `
-      <div class="cm-shape">${makeShapeSVG(cls.shape, 44, cls.color)}</div>
-      <div class="cm-name" style="color:${cls.color}">${cls.name}</div>
-      <div class="cm-cond">${cls.condition}</div>
-    `;
-    el.onclick = () => socket.emit('choose class', cls.id);
+    el.innerHTML = '<div class="cm-shape">' + makeShapeSVG(cls.shape, 44, cls.color) + '</div>'
+      + '<div class="cm-name" style="color:' + cls.color + '">' + cls.name + '</div>'
+      + '<div class="cm-cond">' + cls.condition + '</div>';
+    (function(id) { el.onclick = function() { socket.emit('choose class', id); }; })(cls.id);
     grid.appendChild(el);
-  });
+  }
   document.getElementById('class-modal').classList.add('show');
 }
 function closeClassModal() { document.getElementById('class-modal').classList.remove('show'); }
 
-// ── 레벨업 팝업 ──
 function showLevelUp(level, evolvedName) {
-  const pop = document.getElementById('levelup-pop');
-  document.getElementById('lup-n').textContent = level;
-  document.getElementById('lup-evo').textContent = evolvedName ? `${evolvedName}으로 진화` : '';
+  var pop = document.getElementById('levelup-pop');
+  document.getElementById('lup-n').textContent   = level;
+  document.getElementById('lup-evo').textContent = evolvedName ? evolvedName + '\uc73c\ub85c \uc9c4\ud654' : '';
   pop.classList.add('show');
-  setTimeout(() => pop.classList.remove('show'), 2500);
+  setTimeout(function() { pop.classList.remove('show'); }, 2500);
 }
 
-// ── 데미지 팝업 (위치 기반) ──
+// ══════════════════════════════════════
+//  데미지 팝업
+// ══════════════════════════════════════
 function showDmgPopupAt(val, color, screenX, screenY) {
-  const el = document.createElement('div');
+  var el = document.createElement('div');
   el.className = 'dmg-float';
-  const rect = canvas.getBoundingClientRect();
-  el.style.cssText = `left:${rect.left + screenX + (Math.random()-0.5)*30}px;top:${rect.top + screenY}px;color:${color};`;
+  var rect = canvas.getBoundingClientRect();
+  var absX = rect.left + screenX + (Math.random() - 0.5) * 24;
+  var absY = rect.top  + screenY;
+  el.style.cssText = 'left:' + absX + 'px;top:' + absY + 'px;color:' + color
+    + ';text-shadow:0 0 8px ' + color + ';';
   el.textContent = val;
   document.body.appendChild(el);
-  setTimeout(() => el.remove(), 1000);
+  setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 1000);
 }
 
-// ── 채팅 ──
+// ══════════════════════════════════════
+//  채팅
+// ══════════════════════════════════════
 function sendChat() {
-  const input = document.getElementById('chat-input');
-  const msg = input.value.trim();
+  var input = document.getElementById('chat-input');
+  var msg = input.value.trim();
   if (!msg) return;
   socket.emit('chat message', { message: msg });
   input.value = '';
 }
-document.getElementById('chat-input').addEventListener('keydown', e => {
-  if(e.key==='Enter') { sendChat(); e.stopPropagation(); }
-  e.stopPropagation(); // 채팅 중 이동키 방지
+document.getElementById('chat-input').addEventListener('keydown', function(e) {
+  e.stopPropagation();
+  if (e.key === 'Enter') sendChat();
 });
-// 채팅창 포커스 중 이동 방지
-document.getElementById('chat-input').addEventListener('keyup', e => e.stopPropagation());
+document.getElementById('chat-input').addEventListener('keyup', function(e) { e.stopPropagation(); });
 
 function addSysMsg(msg) {
-  const msgs = document.getElementById('messages');
-  const el = document.createElement('div');
+  var msgs = document.getElementById('messages');
+  var el = document.createElement('div');
   el.className = 'chat-sys';
   el.textContent = msg;
   msgs.appendChild(el);
   msgs.scrollTop = msgs.scrollHeight;
-  // 메시지 최대 100개 유지
-  while (msgs.children.length > 100) msgs.removeChild(msgs.firstChild);
+  while (msgs.children.length > 120) msgs.removeChild(msgs.firstChild);
 }
 
-// ── SVG 도형 헬퍼 ──
+// ══════════════════════════════════════
+//  SVG 도형 헬퍼
+// ══════════════════════════════════════
 function makeShapeSVG(shape, size, color) {
-  const c = color, s = size, h = size;
-  switch(shape) {
-    case 'circle': return `<svg width="${s}" height="${h}" viewBox="0 0 ${s} ${h}"><circle cx="${s/2}" cy="${h/2}" r="${s/2-2}" fill="${c}22" stroke="${c}" stroke-width="1.5"/></svg>`;
-    case 'triangle': return `<svg width="${s}" height="${h}" viewBox="0 0 ${s} ${h}"><polygon points="${s/2},2 ${s-2},${h-2} 2,${h-2}" fill="${c}22" stroke="${c}" stroke-width="1.5"/></svg>`;
-    case 'square': return `<svg width="${s}" height="${h}" viewBox="0 0 ${s} ${h}"><rect x="2" y="2" width="${s-4}" height="${h-4}" fill="${c}22" stroke="${c}" stroke-width="1.5"/></svg>`;
+  var c = color, s = size;
+  var half = s / 2, r = half - 2;
+  switch (shape) {
+    case 'circle':
+      return '<svg width="' + s + '" height="' + s + '" viewBox="0 0 ' + s + ' ' + s + '">'
+        + '<circle cx="' + half + '" cy="' + half + '" r="' + r + '" fill="' + c + '22" stroke="' + c + '" stroke-width="1.5"/></svg>';
+    case 'triangle':
+      return '<svg width="' + s + '" height="' + s + '" viewBox="0 0 ' + s + ' ' + s + '">'
+        + '<polygon points="' + half + ',2 ' + (s-2) + ',' + (s-2) + ' 2,' + (s-2) + '"'
+        + ' fill="' + c + '22" stroke="' + c + '" stroke-width="1.5"/></svg>';
+    case 'square':
+      return '<svg width="' + s + '" height="' + s + '" viewBox="0 0 ' + s + ' ' + s + '">'
+        + '<rect x="2" y="2" width="' + (s-4) + '" height="' + (s-4) + '"'
+        + ' fill="' + c + '22" stroke="' + c + '" stroke-width="1.5"/></svg>';
     case 'pentagon': {
-      const cx=s/2,cy=h/2,r=s/2-2;
-      const pts=[0,1,2,3,4].map(i=>{const a=(i*72-90)*Math.PI/180;return `${cx+r*Math.cos(a)},${cy+r*Math.sin(a)}`;}).join(' ');
-      return `<svg width="${s}" height="${h}" viewBox="0 0 ${s} ${h}"><polygon points="${pts}" fill="${c}22" stroke="${c}" stroke-width="1.5"/></svg>`;
+      var pts5 = '';
+      for (var i = 0; i < 5; i++) {
+        var a5 = (i * 72 - 90) * Math.PI / 180;
+        pts5 += (half + r * Math.cos(a5)) + ',' + (half + r * Math.sin(a5)) + ' ';
+      }
+      return '<svg width="' + s + '" height="' + s + '" viewBox="0 0 ' + s + ' ' + s + '">'
+        + '<polygon points="' + pts5.trim() + '" fill="' + c + '22" stroke="' + c + '" stroke-width="1.5"/></svg>';
     }
     case 'hexagon': {
-      const cx=s/2,cy=h/2,r=s/2-2;
-      const pts=[0,1,2,3,4,5].map(i=>{const a=(i*60-30)*Math.PI/180;return `${cx+r*Math.cos(a)},${cy+r*Math.sin(a)}`;}).join(' ');
-      return `<svg width="${s}" height="${h}" viewBox="0 0 ${s} ${h}"><polygon points="${pts}" fill="${c}22" stroke="${c}" stroke-width="1.5"/></svg>`;
+      var pts6 = '';
+      for (var i = 0; i < 6; i++) {
+        var a6 = (i * 60 - 30) * Math.PI / 180;
+        pts6 += (half + r * Math.cos(a6)) + ',' + (half + r * Math.sin(a6)) + ' ';
+      }
+      return '<svg width="' + s + '" height="' + s + '" viewBox="0 0 ' + s + ' ' + s + '">'
+        + '<polygon points="' + pts6.trim() + '" fill="' + c + '22" stroke="' + c + '" stroke-width="1.5"/></svg>';
     }
     case 'star': {
-      const cx=s/2,cy=h/2,ro=s/2-2,ri=s/4;
-      let pts='';
-      for(let i=0;i<10;i++){const r=i%2===0?ro:ri;const a=(i*36-90)*Math.PI/180;pts+=`${cx+r*Math.cos(a)},${cy+r*Math.sin(a)} `;}
-      return `<svg width="${s}" height="${h}" viewBox="0 0 ${s} ${h}"><polygon points="${pts.trim()}" fill="${c}22" stroke="${c}" stroke-width="1.5"/></svg>`;
+      var ro = r, ri = s / 4, pts10 = '';
+      for (var i = 0; i < 10; i++) {
+        var sr = i % 2 === 0 ? ro : ri;
+        var sa = (i * 36 - 90) * Math.PI / 180;
+        pts10 += (half + sr * Math.cos(sa)) + ',' + (half + sr * Math.sin(sa)) + ' ';
+      }
+      return '<svg width="' + s + '" height="' + s + '" viewBox="0 0 ' + s + ' ' + s + '">'
+        + '<polygon points="' + pts10.trim() + '" fill="' + c + '22" stroke="' + c + '" stroke-width="1.5"/></svg>';
     }
-    default: return makeShapeSVG('circle', size, color);
+    default:
+      return makeShapeSVG('circle', size, color);
   }
 }
 
-function esc(t) { return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function esc(t) {
+  return String(t)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
 </script>
 </body>
 </html>

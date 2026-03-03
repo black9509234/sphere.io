@@ -330,6 +330,7 @@ io.on('connection', (socket) => {
       hp: acc.maxHp, mp: acc.maxMp,
       shape: acc.className ? acc.shape : evo.shape,
       color: acc.className ? acc.color : evo.color,
+      x: TOWN_X, y: TOWN_Y, // ★ 항상 타운에서 시작
     };
     onlinePlayers[socket.id] = p;
     socket.emit('login success', sanitize(p));
