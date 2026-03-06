@@ -1,156 +1,81 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>sphere.io</title>
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body {
-  background: #fff;
-  font-family: 'Segoe UI', sans-serif;
-  overflow: hidden;
-  color: #222;
-}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#fff; font-family:'Segoe UI',sans-serif; overflow:hidden; color:#222; }
 
-/* ════════ AUTH ════════ */
-#auth-screen {
-  position: fixed; inset: 0; z-index: 100;
-  display: flex; align-items: center; justify-content: center;
-  background: #fff;
-}
-.auth-box { width: 340px; border: 1.5px solid #ddd; background: #fafafa; }
-.auth-titlebar {
-  background: #f0f0f0; border-bottom: 1.5px solid #ddd;
-  padding: 8px 14px; display: flex; align-items: center; gap: 7px;
-  font-size: 11px; color: #888; font-family: 'Courier New', monospace;
-}
-.auth-titlebar .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-.auth-body { padding: 22px 22px 24px; }
-.auth-title { font-family: 'Courier New', monospace; font-size: 22px; font-weight: 900; color: #1a6fff; margin-bottom: 4px; }
-.auth-sub   { font-family: 'Courier New', monospace; font-size: 10px; color: #aaa; letter-spacing: .08em; margin-bottom: 20px; }
-.mode-row { display: flex; gap: 8px; margin-bottom: 18px; }
-.mbtn {
-  flex: 1; padding: 7px 0; background: #fff; border: 1.5px solid #ddd;
-  color: #888; font-family: 'Courier New', monospace; font-size: 11px;
-  font-weight: 700; letter-spacing: .08em; cursor: pointer; transition: all .12s;
-}
-.mbtn.on { background: #1a6fff; border-color: #1a6fff; color: #fff; }
-.mbtn:hover:not(.on) { border-color: #1a6fff; color: #1a6fff; }
-.field { margin-bottom: 12px; }
-.field-lbl { font-family: 'Courier New', monospace; font-size: 10px; color: #aaa; letter-spacing: .08em; margin-bottom: 5px; }
-.irow {
-  display: flex; align-items: center; border: 1.5px solid #ddd;
-  background: #fff; padding: 0 10px; transition: border-color .12s;
-}
-.irow:focus-within { border-color: #1a6fff; }
-.ipfx { font-family: 'Courier New', monospace; font-size: 13px; color: #bbb; margin-right: 7px; user-select: none; }
-.irow input {
-  flex: 1; background: transparent; border: none; outline: none;
-  color: #222; font-family: 'Courier New', monospace; font-size: 13px;
-  padding: 9px 0; caret-color: #1a6fff;
-}
-.irow input::placeholder { color: #ccc; }
-.sep { border: none; border-top: 1.5px solid #eee; margin: 16px 0; }
-.sbtn {
-  width: 100%; padding: 10px; background: #1a6fff; border: none; color: #fff;
-  font-family: 'Courier New', monospace; font-size: 12px; font-weight: 700;
-  letter-spacing: .1em; cursor: pointer; transition: background .12s;
-}
-.sbtn:hover { background: #0050dd; }
-.auth-msg { font-family: 'Courier New', monospace; font-size: 11px; margin-top: 11px; min-height: 14px; }
-.auth-msg.err  { color: #e02020; }
-.auth-msg.ok   { color: #1a8c4e; }
-.auth-msg.info { color: #888; }
+/* ══ AUTH ══ */
+#auth-screen { position:fixed; inset:0; z-index:100; display:flex; align-items:center; justify-content:center; background:#fff; }
+.auth-box { width:340px; border:1.5px solid #ddd; background:#fafafa; }
+.auth-titlebar { background:#f0f0f0; border-bottom:1.5px solid #ddd; padding:8px 14px; display:flex; align-items:center; gap:7px; font-size:11px; color:#888; font-family:'Courier New',monospace; }
+.auth-titlebar .dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+.auth-body { padding:22px 22px 24px; }
+.auth-title { font-family:'Courier New',monospace; font-size:22px; font-weight:900; color:#1a6fff; margin-bottom:4px; }
+.auth-sub   { font-family:'Courier New',monospace; font-size:10px; color:#aaa; letter-spacing:.08em; margin-bottom:20px; }
+.mode-row { display:flex; gap:8px; margin-bottom:18px; }
+.mbtn { flex:1; padding:7px 0; background:#fff; border:1.5px solid #ddd; color:#888; font-family:'Courier New',monospace; font-size:11px; font-weight:700; letter-spacing:.08em; cursor:pointer; transition:all .12s; }
+.mbtn.on { background:#1a6fff; border-color:#1a6fff; color:#fff; }
+.mbtn:hover:not(.on) { border-color:#1a6fff; color:#1a6fff; }
+.field { margin-bottom:12px; }
+.field-lbl { font-family:'Courier New',monospace; font-size:10px; color:#aaa; letter-spacing:.08em; margin-bottom:5px; }
+.irow { display:flex; align-items:center; border:1.5px solid #ddd; background:#fff; padding:0 10px; transition:border-color .12s; }
+.irow:focus-within { border-color:#1a6fff; }
+.ipfx { font-family:'Courier New',monospace; font-size:13px; color:#bbb; margin-right:7px; user-select:none; }
+.irow input { flex:1; background:transparent; border:none; outline:none; color:#222; font-family:'Courier New',monospace; font-size:13px; padding:9px 0; caret-color:#1a6fff; }
+.irow input::placeholder { color:#ccc; }
+.sep { border:none; border-top:1.5px solid #eee; margin:16px 0; }
+.sbtn { width:100%; padding:10px; background:#1a6fff; border:none; color:#fff; font-family:'Courier New',monospace; font-size:12px; font-weight:700; letter-spacing:.1em; cursor:pointer; transition:background .12s; }
+.sbtn:hover { background:#0050dd; }
+.auth-msg { font-family:'Courier New',monospace; font-size:11px; margin-top:11px; min-height:14px; }
+.auth-msg.err  { color:#e02020; }
+.auth-msg.ok   { color:#1a8c4e; }
+.auth-msg.info { color:#888; }
 
-/* ════════ HUD ════════ */
-#hud {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 10;
-  padding: 8px 16px;
-  background: rgba(255,255,255,0.96);
-  border-bottom: 1px solid #e8e8e8;
-  display: none; align-items: center; gap: 16px;
-  font-size: 11px; pointer-events: none;
-}
-.hbrand { font-family: 'Courier New', monospace; font-weight: 900; font-size: 14px; color: #1a6fff; }
-.hsep   { color: #ddd; }
-.hi     { color: #aaa; font-family: 'Courier New', monospace; font-size: 11px; }
-.hi b   { color: #222; font-weight: 600; }
+/* ══ HUD ══ */
+#hud { position:fixed; top:0; left:0; right:0; z-index:10; padding:8px 16px; background:rgba(255,255,255,0.96); border-bottom:1px solid #e8e8e8; display:none; align-items:center; gap:14px; font-size:11px; pointer-events:none; }
+.hbrand { font-family:'Courier New',monospace; font-weight:900; font-size:14px; color:#1a6fff; }
+.hsep   { color:#ddd; }
+.hi     { color:#aaa; font-family:'Courier New',monospace; font-size:11px; }
+.hi b   { color:#222; font-weight:600; }
+#xp-bar-wrap { display:flex; align-items:center; gap:5px; }
+#xp-track    { width:72px; height:5px; background:#eee; border-radius:3px; overflow:hidden; }
+#xp-fill     { height:100%; background:#1a6fff; border-radius:3px; transition:width .3s; width:0%; }
+#hp-bar-wrap { display:flex; align-items:center; gap:5px; }
+#hp-track    { width:60px; height:5px; background:#eee; border-radius:3px; overflow:hidden; }
+#hp-fill     { height:100%; background:#e05050; border-radius:3px; transition:width .3s; width:100%; }
 
-/* XP bar in HUD */
-#xp-bar-wrap {
-  display: flex; align-items: center; gap: 6px;
-}
-#xp-track {
-  width: 80px; height: 6px; background: #eee; border-radius: 3px; overflow: hidden;
-}
-#xp-fill {
-  height: 100%; background: #1a6fff; border-radius: 3px;
-  transition: width .3s ease; width: 0%;
-}
+#logout-btn { position:fixed; top:8px; right:14px; z-index:11; background:#fff; border:1px solid #ddd; color:#888; font-family:'Courier New',monospace; font-size:11px; padding:4px 12px; cursor:pointer; transition:all .12s; display:none; letter-spacing:.06em; }
+#logout-btn:hover { border-color:#e02020; color:#e02020; }
 
-#logout-btn {
-  position: fixed; top: 8px; right: 14px; z-index: 11;
-  background: #fff; border: 1px solid #ddd; color: #888;
-  font-family: 'Courier New', monospace; font-size: 11px;
-  padding: 4px 12px; cursor: pointer; transition: all .12s;
-  display: none; letter-spacing: .06em; pointer-events: all;
-}
-#logout-btn:hover { border-color: #e02020; color: #e02020; }
+.ax { position:fixed; font-family:'Courier New',monospace; font-size:10px; color:#ccc; pointer-events:none; display:none; }
 
-.ax { position: fixed; font-family: 'Courier New', monospace; font-size: 10px; color: #ccc; pointer-events: none; display: none; }
+/* ══ CHAT ══ */
+#chat-wrap { position:fixed; bottom:16px; right:16px; z-index:20; width:280px; display:none; flex-direction:column; gap:6px; }
+#chat-log  { height:150px; overflow-y:auto; overflow-x:hidden; background:rgba(255,255,255,0.93); border:1px solid #e0e0e0; padding:8px 10px; display:flex; flex-direction:column; gap:4px; scroll-behavior:smooth; }
+#chat-log::-webkit-scrollbar { width:4px; }
+#chat-log::-webkit-scrollbar-thumb { background:#ddd; border-radius:2px; }
+.chat-line { font-size:12px; line-height:1.4; word-break:break-word; }
+.chat-line .cn { font-weight:700; color:#1a6fff; margin-right:4px; }
+.chat-line .ct { color:#333; }
+.chat-line.sys   { color:#aaa; font-style:italic; font-size:11px; }
+.chat-line.lvlup { color:#c07000; font-size:11px; }
+.chat-line.kill  { color:#888; font-size:11px; }
+#chat-input-row { display:flex; border:1px solid #e0e0e0; background:rgba(255,255,255,0.96); }
+#chat-input { flex:1; border:none; outline:none; padding:8px 10px; font-size:12px; font-family:'Segoe UI',sans-serif; background:transparent; color:#222; caret-color:#1a6fff; }
+#chat-input::placeholder { color:#bbb; }
+#chat-send { border:none; background:#1a6fff; color:#fff; padding:0 12px; cursor:pointer; font-size:12px; font-family:'Courier New',monospace; font-weight:700; transition:background .12s; flex-shrink:0; }
+#chat-send:hover { background:#0050dd; }
 
-/* ════════ CHAT ════════ */
-#chat-wrap {
-  position: fixed; bottom: 16px; right: 16px; z-index: 20;
-  width: 280px; display: none; flex-direction: column; gap: 6px;
-}
-#chat-log {
-  height: 150px; overflow-y: auto; overflow-x: hidden;
-  background: rgba(255,255,255,0.92);
-  border: 1px solid #e0e0e0;
-  padding: 8px 10px;
-  display: flex; flex-direction: column; gap: 4px;
-  scroll-behavior: smooth;
-}
-#chat-log::-webkit-scrollbar { width: 4px; }
-#chat-log::-webkit-scrollbar-thumb { background: #ddd; border-radius: 2px; }
-.chat-line { font-size: 12px; line-height: 1.4; word-break: break-word; }
-.chat-line .cn { font-weight: 700; color: #1a6fff; margin-right: 4px; }
-.chat-line .ct { color: #333; }
-.chat-line.sys  { color: #aaa; font-style: italic; font-size: 11px; }
-.chat-line.lvlup .ct { color: #f0a000; font-weight: 600; }
+/* ══ LEVEL-UP FLASH ══ */
+#levelup-flash { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:50; pointer-events:none; font-size:28px; font-weight:900; color:#1a6fff; opacity:0; transition:opacity .2s; white-space:nowrap; }
 
-#chat-input-row {
-  display: flex; gap: 0;
-  border: 1px solid #e0e0e0;
-  background: rgba(255,255,255,0.96);
-}
-#chat-input {
-  flex: 1; border: none; outline: none; padding: 8px 10px;
-  font-size: 12px; font-family: 'Segoe UI', sans-serif;
-  background: transparent; color: #222; caret-color: #1a6fff;
-}
-#chat-input::placeholder { color: #bbb; }
-#chat-send {
-  border: none; background: #1a6fff; color: #fff;
-  padding: 0 12px; cursor: pointer; font-size: 12px;
-  font-family: 'Courier New', monospace; font-weight: 700;
-  transition: background .12s; flex-shrink: 0;
-}
-#chat-send:hover { background: #0050dd; }
-
-/* ════════ LEVEL-UP FLASH ════════ */
-#levelup-flash {
-  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-  z-index: 50; pointer-events: none;
-  font-family: 'Segoe UI', sans-serif; font-size: 28px; font-weight: 900;
-  color: #1a6fff; opacity: 0;
-  text-shadow: 0 2px 12px rgba(26,111,255,0.25);
-  transition: opacity .2s;
-  white-space: nowrap;
-}
+/* ══ DAMAGE NUMBERS ══ */
+.dmg-num { position:fixed; pointer-events:none; font-family:'Courier New',monospace; font-size:14px; font-weight:700; z-index:30; }
 </style>
 </head>
 <body>
@@ -204,11 +129,17 @@ body {
     <span class="hi"><b id="h-xp">0</b>/<b id="h-xpmax">30</b> XP</span>
   </div>
   <span class="hsep">|</span>
-  <span class="hi">COORD: <b id="h-pos">(0, 0)</b></span>
+  <span class="hi">HP</span>
+  <div id="hp-bar-wrap">
+    <div id="hp-track"><div id="hp-fill"></div></div>
+    <span class="hi"><b id="h-hp">100</b></span>
+  </div>
+  <span class="hsep">|</span>
+  <span class="hi">COORD: <b id="h-pos">(0,0)</b></span>
   <span class="hsep">|</span>
   <span class="hi">ONLINE: <b id="h-cnt">0</b></span>
   <span class="hsep">|</span>
-  <span class="hi" style="color:#ccc">WASD · ENTER=채팅</span>
+  <span class="hi" style="color:#ccc">WASD · Z=공격 · ENTER=채팅</span>
 </div>
 <button id="logout-btn" onclick="doLogout()">LOGOUT</button>
 
@@ -217,7 +148,6 @@ body {
 <div class="ax" id="al-yp" style="top:44px;left:50%;transform:translateX(-50%)">↑ +Y</div>
 <div class="ax" id="al-yn" style="bottom:10px;left:50%;transform:translateX(-50%)">−Y ↓</div>
 
-<!-- ══ CHAT ══ -->
 <div id="chat-wrap">
   <div id="chat-log"></div>
   <div id="chat-input-row">
@@ -226,16 +156,15 @@ body {
   </div>
 </div>
 
-<!-- ══ LEVEL UP FLASH ══ -->
 <div id="levelup-flash"></div>
 
 <script>
-// ════════════════════════════════════
+// ══════════════════════════════════════
 //  AUTH
-// ════════════════════════════════════
+// ══════════════════════════════════════
 const UKEY   = 'sphere_users_v1';
 const getDB  = () => { try { return JSON.parse(localStorage.getItem(UKEY)) || {}; } catch { return {}; } };
-const saveDB = d  => localStorage.setItem(UKEY, JSON.stringify(d));
+const saveDB = d => localStorage.setItem(UKEY, JSON.stringify(d));
 let authMode = 'login';
 
 const elMsg    = document.getElementById('auth-msg');
@@ -245,6 +174,10 @@ const elLv     = document.getElementById('h-lv');
 const elXp     = document.getElementById('h-xp');
 const elXpMax  = document.getElementById('h-xpmax');
 const elXpFill = document.getElementById('xp-fill');
+const elHp     = document.getElementById('h-hp');
+const elHpFill = document.getElementById('hp-fill');
+const chatLog  = document.getElementById('chat-log');
+const chatInput= document.getElementById('chat-input');
 
 function setMode(m) {
   authMode = m;
@@ -275,51 +208,53 @@ function handleAuth() {
     setMsg(`OK :: welcome, ${u}`, 'ok');
     setTimeout(() => startGame(u), 600);
   } else {
-    if (!db[u])         { setMsg('ERR :: user not found',   'err'); return; }
-    if (db[u].pw !== p) { setMsg('ERR :: wrong password',   'err'); return; }
+    if (!db[u])         { setMsg('ERR :: user not found',  'err'); return; }
+    if (db[u].pw !== p) { setMsg('ERR :: wrong password',  'err'); return; }
     setMsg(`OK :: connecting as ${u}…`, 'ok');
     setTimeout(() => startGame(u), 400);
   }
 }
 ['i-user','i-pass','i-cfm'].forEach(id =>
-  document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') handleAuth(); }));
+  document.getElementById(id).addEventListener('keydown', e => { if (e.key==='Enter') handleAuth(); }));
 
-// ════════════════════════════════════
-//  ENGINE
-// ════════════════════════════════════
+// ══════════════════════════════════════
+//  ENGINE STATE
+// ══════════════════════════════════════
 const canvas = document.getElementById('canvas');
 const ctx    = canvas.getContext('2d');
-
-function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+function resize() { canvas.width=window.innerWidth; canvas.height=window.innerHeight; }
 resize();
 window.addEventListener('resize', resize);
 
-let socket, myId = null, worldW = 3000, worldH = 3000;
-let snapshot = [];   // array of player objects
-let orbMap   = {};   // id → orb  (managed locally, server is authoritative)
-const TILE   = 60;
+let socket, myId=null, worldW=3000, worldH=3000;
+let playerMap   = {};  // id→player  [FIX] Map for O(1) lookup instead of O(n) find
+let orbMap      = {};
+let monsterMap  = {};
+const TILE=60;
 
 const keys = { up:false, down:false, left:false, right:false };
-let lastKeys = {}, gameRunning = false, rafId = null;
+let lastKeys={}, gameRunning=false, rafId=null;
+let attackCooldown=false;  // Z key cooldown flag
 
-// ── Key input (skip when chat input is focused) ──
+// ══════════════════════════════════════
+//  INPUT  [FIX] single keydown listener, no duplication
+// ══════════════════════════════════════
 window.addEventListener('keydown', e => {
+  // Enter opens chat (only when not already focused and game is running)
+  if (e.key==='Enter' && !chatFocused() && gameRunning) {
+    chatInput.focus(); e.preventDefault(); return;
+  }
   if (chatFocused()) return;
-  applyKey(e, true);  sendKeys();
+  // Z = attack nearest monster
+  if ((e.key==='z'||e.key==='Z') && gameRunning) { tryAttack(); return; }
+  applyKey(e, true); sendKeys();
 });
 window.addEventListener('keyup', e => {
   if (chatFocused()) return;
   applyKey(e, false); sendKeys();
 });
-// Enter to open/send chat
-window.addEventListener('keydown', e => {
-  if (e.key === 'Enter' && !chatFocused() && gameRunning) {
-    document.getElementById('chat-input').focus();
-    e.preventDefault();
-  }
-});
 
-function chatFocused() { return document.activeElement === document.getElementById('chat-input'); }
+function chatFocused() { return document.activeElement === chatInput; }
 
 function applyKey(e, v) {
   if (e.key==='ArrowUp'   ||e.key==='w'||e.key==='W') keys.up    = v;
@@ -334,344 +269,427 @@ function sendKeys() {
   if (ch) { socket.emit('keys',{...keys}); lastKeys={...keys}; }
 }
 
-// ════════════════════════════════════
-//  CHAT
-// ════════════════════════════════════
-const MAX_CHAT_LINES = 80;
-const chatLog  = document.getElementById('chat-log');
-const chatInput= document.getElementById('chat-input');
-
-// Per-player bubble: playerId → { text, expiry }
-const bubbles = {};
-
-function addChatLine(html, extraClass = '') {
-  const div = document.createElement('div');
-  div.className = 'chat-line' + (extraClass ? ' ' + extraClass : '');
-  div.innerHTML = html;
-  chatLog.appendChild(div);
-  // prune old lines
-  while (chatLog.children.length > MAX_CHAT_LINES) chatLog.removeChild(chatLog.firstChild);
-  chatLog.scrollTop = chatLog.scrollHeight;
-}
-
-function sendChat() {
-  const text = chatInput.value.trim();
-  if (!text || !socket) return;
-  socket.emit('chat', text);
-  chatInput.value = '';
-  chatInput.blur();
-}
-chatInput.addEventListener('keydown', e => {
-  if (e.key === 'Enter') { sendChat(); e.preventDefault(); }
-  if (e.key === 'Escape') { chatInput.blur(); }
+// [FIX] Reset all keys on focus loss to prevent stuck movement
+window.addEventListener('blur', () => {
+  keys.up=keys.down=keys.left=keys.right=false;
+  sendKeys();
 });
 
-// ── Level-up flash ──
-let flashTimer = null;
-function showLevelUpFlash(level) {
-  const el = document.getElementById('levelup-flash');
-  el.textContent = `⬆ LEVEL ${level}!`;
-  el.style.opacity = '1';
-  if (flashTimer) clearTimeout(flashTimer);
-  flashTimer = setTimeout(() => { el.style.opacity = '0'; }, 2200);
+// ══════════════════════════════════════
+//  ATTACK
+// ══════════════════════════════════════
+function tryAttack() {
+  if (attackCooldown || !socket) return;
+  const me = playerMap[myId];
+  if (!me) return;
+  // Find nearest monster within visible range
+  let nearest=null, nearDist=Infinity;
+  for (const m of Object.values(monsterMap)) {
+    const d = Math.hypot(me.x-m.x, me.y-m.y);
+    if (d < nearDist) { nearDist=d; nearest=m; }
+  }
+  if (!nearest) return;
+  socket.emit('attack', { monsterId: nearest.id });
+  attackCooldown = true;
+  setTimeout(() => { attackCooldown=false; }, 400);
+  // Visual slash effect
+  spawnDmgNum(nearest.x, nearest.y, '⚔', '#555');
 }
 
-// ════════════════════════════════════
-//  GAME LIFECYCLE
-// ════════════════════════════════════
-function startGame(username) {
-  if (gameRunning) return;
-  gameRunning = true;
-
-  document.getElementById('auth-screen').style.display = 'none';
-  document.getElementById('hud').style.display         = 'flex';
-  document.getElementById('logout-btn').style.display  = 'block';
-  document.getElementById('chat-wrap').style.display   = 'flex';
-  ['al-xp','al-xn','al-yp','al-yn'].forEach(id => document.getElementById(id).style.display = 'block');
-  document.getElementById('h-user').textContent = username;
-
-  socket = io();
-  socket.on('connect', () => socket.emit('join', { name: username }));
-
-  socket.on('welcome', d => {
-    myId   = d.id;
-    worldW = d.worldW;
-    worldH = d.worldH;
-    // Initialize orbs from server's current state
-    orbMap = {};
-    (d.orbs || []).forEach(o => { orbMap[o.id] = o; });
-    addChatLine('<span class="ct">월드에 접속했습니다. Enter로 채팅하세요.</span>', 'sys');
-  });
-
-  socket.on('state', d => {
-    snapshot = d.players;
-    elCnt.textContent = d.players.length;
-    // Sync orbs: server sends full list each tick
-    orbMap = {};
-    (d.orbs || []).forEach(o => { orbMap[o.id] = o; });
-    // Update XP bar for self
-    const me = d.players.find(p => p.id === myId);
-    if (me) {
-      elLv.textContent    = me.level;
-      elXp.textContent    = me.xp;
-      elXpMax.textContent = me.xpMax;
-      elXpFill.style.width = (me.xp / me.xpMax * 100).toFixed(1) + '%';
-    }
-  });
-
-  socket.on('orbPickup', ({ orbId }) => {
-    // Remove picked orb from local map immediately for snappy feel
-    delete orbMap[orbId];
-  });
-
-  socket.on('levelUp', ({ id, level, name }) => {
-    if (id === myId) {
-      showLevelUpFlash(level);
-    }
-    addChatLine(`<span class="ct">✦ <b>${name}</b> 님이 레벨 <b>${level}</b>이 되었습니다!</span>`, 'lvlup');
-  });
-
-  socket.on('chat', ({ id, name, text }) => {
-    // Show bubble above player
-    bubbles[id] = { text, expiry: Date.now() + 3000 };
-    addChatLine(`<span class="cn">${escHtml(name)}</span><span class="ct">${escHtml(text)}</span>`);
-  });
-
-  if (rafId) cancelAnimationFrame(rafId);
-  rafId = requestAnimationFrame(loop);
-}
-
-function doLogout() {
-  gameRunning = false;
-  if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
-  myId = null; snapshot = []; orbMap = {};
-  if (socket) { socket.disconnect(); socket = null; }
-  document.getElementById('hud').style.display        = 'none';
-  document.getElementById('logout-btn').style.display = 'none';
-  document.getElementById('chat-wrap').style.display  = 'none';
-  ['al-xp','al-xn','al-yp','al-yn'].forEach(id => document.getElementById(id).style.display = 'none');
-  document.getElementById('auth-screen').style.display = 'flex';
-  document.getElementById('i-pass').value = '';
-  document.getElementById('i-cfm').value  = '';
-  chatLog.innerHTML = '';
-  camX = 0; camY = 0;
-  setMsg('DISCONNECTED', 'info');
-}
+// ══════════════════════════════════════
+//  CHAT
+// ══════════════════════════════════════
+const bubbles = {};
+const MAX_CHAT_LINES = 80;
 
 function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
+function addChatLine(safeHtml, cls='') {
+  const div = document.createElement('div');
+  div.className = 'chat-line' + (cls ? ' '+cls : '');
+  div.innerHTML = safeHtml;  // caller must ensure safe HTML
+  chatLog.appendChild(div);
+  while (chatLog.children.length > MAX_CHAT_LINES) chatLog.removeChild(chatLog.firstChild);
+  chatLog.scrollTop = chatLog.scrollHeight;
+}
+function sendChat() {
+  const text = chatInput.value.trim();
+  if (!text || !socket) return;
+  socket.emit('chat', text);
+  chatInput.value='';
+  chatInput.blur();
+}
+chatInput.addEventListener('keydown', e => {
+  if (e.key==='Enter') { sendChat(); e.preventDefault(); }
+  if (e.key==='Escape') chatInput.blur();
+});
 
-// ════════════════════════════════════
+// ══════════════════════════════════════
+//  DAMAGE NUMBERS
+// ══════════════════════════════════════
+function spawnDmgNum(worldX, worldY, text, color) {
+  const sx = worldX - camX;
+  const sy = worldY - camY;
+  const el = document.createElement('div');
+  el.className = 'dmg-num';
+  el.style.cssText = `left:${sx}px;top:${sy}px;color:${color};`;
+  el.textContent = text;
+  document.body.appendChild(el);
+  let tick=0;
+  const ani = setInterval(() => {
+    tick++;
+    el.style.top  = (sy - tick*1.5) + 'px';
+    el.style.opacity = String(1 - tick/20);
+    if (tick >= 20) { clearInterval(ani); el.remove(); }
+  }, 30);
+}
+
+// ══════════════════════════════════════
+//  LEVEL-UP FLASH
+// ══════════════════════════════════════
+let flashTimer=null;
+function showLevelUpFlash(level) {
+  const el=document.getElementById('levelup-flash');
+  el.textContent=`⬆ LEVEL ${level}!`;
+  el.style.opacity='1';
+  if (flashTimer) clearTimeout(flashTimer);
+  flashTimer = setTimeout(()=>{ el.style.opacity='0'; }, 2200);
+}
+
+// ══════════════════════════════════════
+//  GAME LIFECYCLE
+// ══════════════════════════════════════
+function startGame(username) {
+  if (gameRunning) return;
+  gameRunning=true;
+
+  document.getElementById('auth-screen').style.display='none';
+  document.getElementById('hud').style.display='flex';
+  document.getElementById('logout-btn').style.display='block';
+  document.getElementById('chat-wrap').style.display='flex';
+  ['al-xp','al-xn','al-yp','al-yn'].forEach(id=>document.getElementById(id).style.display='block');
+  document.getElementById('h-user').textContent=username;
+
+  socket=io();
+  socket.on('connect', ()=>socket.emit('join',{name:username}));
+
+  socket.on('welcome', d=>{
+    myId=d.id; worldW=d.worldW; worldH=d.worldH;
+    addChatLine('<span class="ct">월드에 접속했습니다. WASD 이동 · Z 공격 · Enter 채팅</span>','sys');
+  });
+
+  socket.on('state', d=>{
+    // Rebuild playerMap [FIX] O(1) lookup
+    playerMap={};
+    (d.players||[]).forEach(p=>{ playerMap[p.id]=p; });
+    monsterMap={};
+    (d.monsters||[]).forEach(m=>{ monsterMap[m.id]=m; });
+    orbMap={};
+    (d.orbs||[]).forEach(o=>{ orbMap[o.id]=o; });
+
+    elCnt.textContent = d.players.length;
+
+    const me = playerMap[myId];
+    if (me) {
+      elLv.textContent    = me.level;
+      elXp.textContent    = me.xp;
+      elXpMax.textContent = me.xpMax;
+      elXpFill.style.width = (me.xp / me.xpMax * 100).toFixed(1)+'%';
+      elHp.textContent    = me.hp;
+      elHpFill.style.width = (me.hp / me.maxHp * 100).toFixed(1)+'%';
+    }
+  });
+
+  socket.on('damaged', ({dmg, hp, by})=>{
+    // Flash HP bar red briefly
+    elHpFill.style.background='#ff3030';
+    setTimeout(()=>{ elHpFill.style.background='#e05050'; }, 300);
+    // Show damage number on screen center (player took damage)
+    const me=playerMap[myId];
+    if (me) spawnDmgNum(me.x, me.y-30, `-${dmg}`, '#e02020');
+  });
+
+  socket.on('died', ({x,y})=>{
+    addChatLine('<span>💀 쓰러졌습니다. 부활했습니다.</span>','sys');
+  });
+
+  socket.on('attackResult', ({monsterId, dmg, hp})=>{
+    const m=monsterMap[monsterId];
+    if (m) spawnDmgNum(m.x, m.y-m.r-10, String(dmg), '#333');
+  });
+
+  socket.on('monsterDied', ({monsterId, killerId, xp})=>{
+    delete monsterMap[monsterId];
+    if (killerId===myId) {
+      addChatLine(`<span>⚔ 처치! +${xp} XP</span>`,'sys');
+    }
+  });
+
+  socket.on('levelUp', ({id, level, name})=>{
+    // [FIX] escHtml on name before inserting into DOM
+    if (id===myId) showLevelUpFlash(level);
+    addChatLine(`✦ <b>${escHtml(name)}</b> 님이 레벨 <b>${level}</b>이 되었습니다!`,'lvlup');
+  });
+
+  socket.on('chat', ({id, name, text})=>{
+    // [FIX] both name and text are escaped
+    bubbles[id]={ text, expiry:Date.now()+3000 };
+    addChatLine(`<span class="cn">${escHtml(name)}</span><span class="ct">${escHtml(text)}</span>`);
+  });
+
+  if (rafId) cancelAnimationFrame(rafId);
+  rafId=requestAnimationFrame(loop);
+}
+
+function doLogout() {
+  gameRunning=false;
+  if (rafId) { cancelAnimationFrame(rafId); rafId=null; }
+  // [FIX] reset movement keys on logout
+  keys.up=keys.down=keys.left=keys.right=false;
+  lastKeys={};
+  myId=null; playerMap={}; orbMap={}; monsterMap={};
+  if (socket) { socket.disconnect(); socket=null; }
+  document.getElementById('hud').style.display='none';
+  document.getElementById('logout-btn').style.display='none';
+  document.getElementById('chat-wrap').style.display='none';
+  ['al-xp','al-xn','al-yp','al-yn'].forEach(id=>document.getElementById(id).style.display='none');
+  document.getElementById('auth-screen').style.display='flex';
+  document.getElementById('i-pass').value='';
+  document.getElementById('i-cfm').value='';
+  chatLog.innerHTML='';
+  camX=0; camY=0; lastPosStr='';
+  setMsg('DISCONNECTED','info');
+}
+
+// ══════════════════════════════════════
 //  CAMERA
-// ════════════════════════════════════
-let camX = 0, camY = 0;
+// ══════════════════════════════════════
+let camX=0, camY=0;
 function updateCam(me) {
-  const tx = me.x - canvas.width  / 2;
-  const ty = me.y - canvas.height / 2;
-  camX += (tx - camX) * 0.12;
-  camY += (ty - camY) * 0.12;
-  camX = Math.max(0, Math.min(Math.max(0, worldW - canvas.width),  camX));
-  camY = Math.max(0, Math.min(Math.max(0, worldH - canvas.height), camY));
+  const tx=me.x-canvas.width/2, ty=me.y-canvas.height/2;
+  camX+=(tx-camX)*0.12;
+  camY+=(ty-camY)*0.12;
+  camX=Math.max(0,Math.min(Math.max(0,worldW-canvas.width), camX));
+  camY=Math.max(0,Math.min(Math.max(0,worldH-canvas.height),camY));
+}
+function toMath(sx,sy){ return{mx:Math.round(sx-worldW/2),my:Math.round(worldH/2-sy)}; }
+let lastPosStr='';
+function updateHudPos(me){
+  const{mx,my}=toMath(me.x,me.y);
+  const s=`(${mx},${my})`;
+  if(s!==lastPosStr){elPos.textContent=lastPosStr=s;}
 }
 
-function toMath(sx, sy) {
-  return { mx: Math.round(sx - worldW/2), my: Math.round(worldH/2 - sy) };
-}
-
-let lastPosStr = '';
-function updateHudPos(me) {
-  const { mx, my } = toMath(me.x, me.y);
-  const s = `(${mx}, ${my})`;
-  if (s !== lastPosStr) { elPos.textContent = lastPosStr = s; }
-}
-
-// ════════════════════════════════════
-//  RENDER
-// ════════════════════════════════════
-const C = {
+// ══════════════════════════════════════
+//  RENDER HELPERS
+// ══════════════════════════════════════
+const C={
   bg:'#fff', grid:'#eeeeee', gridMaj:'#e0e0e0',
   axis:'#cccccc', border:'#aaaaaa',
-  blue:'#1a6fff', blueDim:'#5599ff',
-  muted:'#aaaaaa', shadow:'rgba(0,0,0,0.08)',
-  orb:'#f0a000', orbStroke:'#c07800', orbGlow:'rgba(240,160,0,0.18)',
+  blue:'#1a6fff', muted:'#aaaaaa', shadow:'rgba(0,0,0,0.07)',
+  orb:'#f0a000', orbS:'#c07800',
 };
 
-function drawBg() {
-  ctx.fillStyle = C.bg;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+function drawBg(){
+  ctx.fillStyle=C.bg; ctx.fillRect(0,0,canvas.width,canvas.height);
 }
 
-function drawGrid() {
-  ctx.strokeStyle = C.grid; ctx.lineWidth = 1;
-  let sx0 = Math.floor(camX/TILE)*TILE, sy0 = Math.floor(camY/TILE)*TILE;
+function drawGrid(){
+  ctx.strokeStyle=C.grid; ctx.lineWidth=1;
+  let sx0=Math.floor(camX/TILE)*TILE, sy0=Math.floor(camY/TILE)*TILE;
   ctx.beginPath();
-  for (let x=sx0; x<camX+canvas.width+TILE;  x+=TILE) { ctx.moveTo(x-camX,0); ctx.lineTo(x-camX,canvas.height); }
-  for (let y=sy0; y<camY+canvas.height+TILE; y+=TILE) { ctx.moveTo(0,y-camY); ctx.lineTo(canvas.width,y-camY); }
+  for(let x=sx0;x<camX+canvas.width+TILE;x+=TILE){ctx.moveTo(x-camX,0);ctx.lineTo(x-camX,canvas.height);}
+  for(let y=sy0;y<camY+canvas.height+TILE;y+=TILE){ctx.moveTo(0,y-camY);ctx.lineTo(canvas.width,y-camY);}
   ctx.stroke();
-
-  const M = TILE*5;
-  ctx.strokeStyle = C.gridMaj;
-  sx0 = Math.floor(camX/M)*M; sy0 = Math.floor(camY/M)*M;
+  const M=TILE*5;
+  ctx.strokeStyle=C.gridMaj;
+  sx0=Math.floor(camX/M)*M; sy0=Math.floor(camY/M)*M;
   ctx.beginPath();
-  for (let x=sx0; x<camX+canvas.width+M;  x+=M) { ctx.moveTo(x-camX,0); ctx.lineTo(x-camX,canvas.height); }
-  for (let y=sy0; y<camY+canvas.height+M; y+=M) { ctx.moveTo(0,y-camY); ctx.lineTo(canvas.width,y-camY); }
+  for(let x=sx0;x<camX+canvas.width+M;x+=M){ctx.moveTo(x-camX,0);ctx.lineTo(x-camX,canvas.height);}
+  for(let y=sy0;y<camY+canvas.height+M;y+=M){ctx.moveTo(0,y-camY);ctx.lineTo(canvas.width,y-camY);}
   ctx.stroke();
-
-  const axX = worldW/2 - camX, axY = worldH/2 - camY;
-  ctx.strokeStyle = C.axis; ctx.lineWidth = 1.5;
-  ctx.setLineDash([6,4]);
+  const axX=worldW/2-camX, axY=worldH/2-camY;
+  ctx.strokeStyle=C.axis; ctx.lineWidth=1.5; ctx.setLineDash([6,4]);
   ctx.beginPath();
-  ctx.moveTo(0,axY); ctx.lineTo(canvas.width,axY);
-  ctx.moveTo(axX,0); ctx.lineTo(axX,canvas.height);
+  ctx.moveTo(0,axY);ctx.lineTo(canvas.width,axY);
+  ctx.moveTo(axX,0);ctx.lineTo(axX,canvas.height);
   ctx.stroke(); ctx.setLineDash([]);
-
-  ctx.fillStyle = C.muted; ctx.font = '9px Courier New, monospace';
-  const step = M;
-  ctx.textAlign = 'center';
-  for (let x=Math.floor(camX/step)*step; x<camX+canvas.width+step; x+=step) {
-    const v = Math.round(x - worldW/2); if (!v) continue;
-    ctx.fillText(v, x-camX, axY+12);
+  ctx.fillStyle=C.muted; ctx.font='9px Courier New,monospace';
+  const step=M;
+  ctx.textAlign='center';
+  for(let x=Math.floor(camX/step)*step;x<camX+canvas.width+step;x+=step){
+    const v=Math.round(x-worldW/2); if(!v)continue; ctx.fillText(v,x-camX,axY+12);
   }
-  ctx.textAlign = 'right';
-  for (let y=Math.floor(camY/step)*step; y<camY+canvas.height+step; y+=step) {
-    const v = Math.round(worldH/2 - y); if (!v) continue;
-    ctx.fillText(v, axX-4, y-camY+3);
+  ctx.textAlign='right';
+  for(let y=Math.floor(camY/step)*step;y<camY+canvas.height+step;y+=step){
+    const v=Math.round(worldH/2-y); if(!v)continue; ctx.fillText(v,axX-4,y-camY+3);
   }
-  ctx.fillStyle = C.blue; ctx.font = 'bold 10px Courier New, monospace';
-  ctx.textAlign = 'left'; ctx.fillText('O', axX+4, axY-5);
-  drawArrow(canvas.width-8, axY, 1, 0);
-  drawArrow(axX, 44, 0, -1);
+  ctx.fillStyle=C.blue; ctx.font='bold 10px Courier New,monospace';
+  ctx.textAlign='left'; ctx.fillText('O',axX+4,axY-5);
+  drawArrow(canvas.width-8,axY,1,0); drawArrow(axX,44,0,-1);
 }
 
-function drawArrow(x, y, dx, dy) {
-  const s = 6;
-  ctx.save(); ctx.fillStyle = C.axis;
+function drawArrow(x,y,dx,dy){
+  const s=6; ctx.save(); ctx.fillStyle=C.axis;
   ctx.translate(x,y); ctx.rotate(Math.atan2(dy,dx));
-  ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-s,-s/2); ctx.lineTo(-s,s/2);
+  ctx.beginPath(); ctx.moveTo(0,0);ctx.lineTo(-s,-s/2);ctx.lineTo(-s,s/2);
   ctx.closePath(); ctx.fill(); ctx.restore();
 }
 
-function drawBorder() {
-  ctx.strokeStyle = C.border; ctx.lineWidth = 2;
+function drawBorder(){
+  ctx.strokeStyle=C.border; ctx.lineWidth=2;
   ctx.strokeRect(-camX,-camY,worldW,worldH);
-  const hw=worldW/2, hh=worldH/2;
-  ctx.fillStyle='#ccc'; ctx.font='9px Courier New, monospace';
+  const hw=worldW/2,hh=worldH/2;
+  ctx.fillStyle='#ccc'; ctx.font='9px Courier New,monospace';
   [{sx:-camX+4,sy:-camY+12,t:`(−${hw},+${hh})`,a:'left'},
    {sx:-camX+worldW-4,sy:-camY+12,t:`(+${hw},+${hh})`,a:'right'},
    {sx:-camX+4,sy:-camY+worldH-5,t:`(−${hw},−${hh})`,a:'left'},
    {sx:-camX+worldW-4,sy:-camY+worldH-5,t:`(+${hw},−${hh})`,a:'right'}]
-  .forEach(c => { ctx.textAlign=c.a; ctx.fillText(c.t,c.sx,c.sy); });
+  .forEach(c=>{ctx.textAlign=c.a;ctx.fillText(c.t,c.sx,c.sy);});
 }
 
-// ── XP Orbs ──
-function drawOrbs() {
-  const now = Date.now();
-  for (const o of Object.values(orbMap)) {
-    const sx = o.x - camX, sy = o.y - camY;
-    // skip off-screen
-    if (sx < -20 || sx > canvas.width+20 || sy < -20 || sy > canvas.height+20) continue;
-
-    // subtle pulse using sin
-    const pulse = 1 + 0.12 * Math.sin(now * 0.004 + o.id);
-
-    // glow
-    ctx.beginPath(); ctx.arc(sx, sy, 9 * pulse, 0, Math.PI*2);
-    ctx.fillStyle = C.orbGlow; ctx.fill();
-
-    // body
-    ctx.beginPath(); ctx.arc(sx, sy, 6 * pulse, 0, Math.PI*2);
-    ctx.fillStyle   = C.orb;
-    ctx.strokeStyle = C.orbStroke;
-    ctx.lineWidth   = 1.5;
-    ctx.fill(); ctx.stroke();
+function drawOrbs(){
+  const now=Date.now();
+  for(const o of Object.values(orbMap)){
+    const sx=o.x-camX,sy=o.y-camY;
+    if(sx<-20||sx>canvas.width+20||sy<-20||sy>canvas.height+20)continue;
+    const pulse=1+0.12*Math.sin(now*0.004+o.id);
+    ctx.beginPath();ctx.arc(sx,sy,9*pulse,0,Math.PI*2);
+    ctx.fillStyle='rgba(240,160,0,0.15)';ctx.fill();
+    ctx.beginPath();ctx.arc(sx,sy,6*pulse,0,Math.PI*2);
+    ctx.fillStyle=C.orb;ctx.strokeStyle=C.orbS;ctx.lineWidth=1.5;
+    ctx.fill();ctx.stroke();
   }
 }
 
-// ── Players ──
-function drawPlayer(p, isMe) {
-  const sx = p.x - camX, sy = p.y - camY;
-  if (sx < -60 || sx > canvas.width+60 || sy < -60 || sy > canvas.height+60) return;
+// ── Monster shapes ──
+function drawMonster(m){
+  const sx=m.x-camX, sy=m.y-camY;
+  if(sx<-60||sx>canvas.width+60||sy<-60||sy>canvas.height+60)return;
+
+  ctx.strokeStyle=m.color; ctx.fillStyle=m.color;
+  ctx.lineWidth=2;
+
+  switch(m.type){
+    case 'dot':
+      // Simple filled circle
+      ctx.beginPath(); ctx.arc(sx,sy,m.r,0,Math.PI*2);
+      ctx.fill();
+      break;
+
+    case 'line':
+      // Rotating line segment
+      const ang=(Date.now()*0.002)%(Math.PI*2);
+      ctx.save(); ctx.translate(sx,sy); ctx.rotate(ang);
+      ctx.lineWidth=3;
+      ctx.beginPath(); ctx.moveTo(-m.r,0); ctx.lineTo(m.r,0);
+      ctx.stroke(); ctx.restore();
+      break;
+
+    case 'triangle':
+      // Equilateral triangle
+      ctx.save(); ctx.translate(sx,sy);
+      ctx.rotate(Date.now()*0.001);
+      ctx.beginPath();
+      for(let i=0;i<3;i++){
+        const a=(i/3)*Math.PI*2 - Math.PI/2;
+        i===0?ctx.moveTo(Math.cos(a)*m.r,Math.sin(a)*m.r)
+             :ctx.lineTo(Math.cos(a)*m.r,Math.sin(a)*m.r);
+      }
+      ctx.closePath(); ctx.stroke(); ctx.restore();
+      break;
+
+    case 'square':
+      // Rotating square (hollow)
+      ctx.save(); ctx.translate(sx,sy);
+      ctx.rotate(Date.now()*0.0007);
+      ctx.strokeRect(-m.r,-m.r,m.r*2,m.r*2);
+      ctx.restore();
+      break;
+  }
+
+  // HP bar above monster
+  const barW=m.r*2+10, barH=4;
+  const hpPct=m.hp/m.maxHp;
+  const bx=sx-barW/2, by=sy-m.r-10;
+  ctx.fillStyle='#eee';
+  ctx.fillRect(bx,by,barW,barH);
+  ctx.fillStyle= hpPct>0.5 ? '#44aa44' : hpPct>0.25 ? '#e09020' : '#e03030';
+  ctx.fillRect(bx,by,barW*hpPct,barH);
+}
+
+function drawPlayer(p,isMe){
+  const sx=p.x-camX,sy=p.y-camY;
+  if(sx<-80||sx>canvas.width+80||sy<-80||sy>canvas.height+80)return;
 
   // shadow
-  ctx.beginPath(); ctx.arc(sx+2, sy+3, p.r, 0, Math.PI*2);
-  ctx.fillStyle = C.shadow; ctx.fill();
-
+  ctx.beginPath();ctx.arc(sx+2,sy+3,p.r,0,Math.PI*2);
+  ctx.fillStyle=C.shadow;ctx.fill();
   // body
-  ctx.beginPath(); ctx.arc(sx, sy, p.r, 0, Math.PI*2);
-  ctx.fillStyle = isMe ? '#1a6fff' : '#5599ff'; ctx.fill();
-
+  ctx.beginPath();ctx.arc(sx,sy,p.r,0,Math.PI*2);
+  ctx.fillStyle=isMe?'#1a6fff':'#5599ff';ctx.fill();
   // stroke
-  ctx.beginPath(); ctx.arc(sx, sy, p.r, 0, Math.PI*2);
-  ctx.strokeStyle = isMe ? '#003fbb' : '#2266cc';
-  ctx.lineWidth   = isMe ? 3 : 2; ctx.stroke();
+  ctx.beginPath();ctx.arc(sx,sy,p.r,0,Math.PI*2);
+  ctx.strokeStyle=isMe?'#003fbb':'#2266cc';
+  ctx.lineWidth=isMe?3:2;ctx.stroke();
 
   // name
-  ctx.fillStyle = '#333'; ctx.font = 'bold 12px Segoe UI, sans-serif';
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText(p.name, sx, sy - p.r - 22);
-
-  // level badge
-  ctx.fillStyle = '#888'; ctx.font = '10px Courier New, monospace';
-  ctx.fillText(`Lv.${p.level}`, sx, sy - p.r - 11);
-
-  // math coords
-  const { mx, my } = toMath(p.x, p.y);
-  ctx.fillStyle = C.muted; ctx.font = '10px Courier New, monospace';
-  ctx.fillText(`(${mx}, ${my})`, sx, sy - p.r - 1);
+  ctx.fillStyle='#333';ctx.font='bold 12px Segoe UI,sans-serif';
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(p.name,sx,sy-p.r-22);
+  // level
+  ctx.fillStyle='#888';ctx.font='10px Courier New,monospace';
+  ctx.fillText(`Lv.${p.level}`,sx,sy-p.r-11);
+  // coords
+  const{mx,my}=toMath(p.x,p.y);
+  ctx.fillStyle=C.muted;ctx.font='10px Courier New,monospace';
+  ctx.fillText(`(${mx},${my})`,sx,sy-p.r-1);
 
   // chat bubble
-  const bubble = bubbles[p.id];
-  if (bubble && Date.now() < bubble.expiry) {
-    const bx = sx, by = sy - p.r - 42;
-    const maxW = 160;
-    ctx.font = '12px Segoe UI, sans-serif';
-    const tw = Math.min(ctx.measureText(bubble.text).width + 16, maxW);
-    const bh = 24;
-    // box
-    ctx.fillStyle   = 'rgba(255,255,255,0.95)';
-    ctx.strokeStyle = '#ddd';
-    ctx.lineWidth   = 1;
-    roundRect(ctx, bx - tw/2, by - bh/2, tw, bh, 5);
-    ctx.fill(); ctx.stroke();
-    // text (truncated)
-    ctx.fillStyle    = '#222';
-    ctx.textBaseline = 'middle';
+  const bubble=bubbles[p.id];
+  if(bubble&&Date.now()<bubble.expiry){
+    const bx=sx,by=sy-p.r-44;
+    ctx.font='12px Segoe UI,sans-serif';
+    const tw=Math.min(ctx.measureText(bubble.text).width+16,160);
+    const bh=24;
+    ctx.fillStyle='rgba(255,255,255,0.95)';
+    ctx.strokeStyle='#ddd';ctx.lineWidth=1;
+    roundRect(ctx,bx-tw/2,by-bh/2,tw,bh,5);
+    ctx.fill();ctx.stroke();
+    ctx.fillStyle='#222';ctx.textBaseline='middle';
     ctx.save();
-    ctx.rect(bx - tw/2 + 4, by - bh/2, tw - 8, bh);
-    ctx.clip();
-    ctx.fillText(bubble.text, bx, by);
+    ctx.beginPath();ctx.rect(bx-tw/2+4,by-bh/2,tw-8,bh);ctx.clip();
+    ctx.fillText(bubble.text,bx,by);
     ctx.restore();
   }
-
-  ctx.textBaseline = 'alphabetic';
+  ctx.textBaseline='alphabetic';
 }
 
-function roundRect(ctx, x, y, w, h, r) {
+function roundRect(ctx,x,y,w,h,r){
   ctx.beginPath();
-  ctx.moveTo(x+r, y);
-  ctx.lineTo(x+w-r, y); ctx.arcTo(x+w,y, x+w,y+r, r);
-  ctx.lineTo(x+w, y+h-r); ctx.arcTo(x+w,y+h, x+w-r,y+h, r);
-  ctx.lineTo(x+r, y+h); ctx.arcTo(x,y+h, x,y+h-r, r);
-  ctx.lineTo(x, y+r); ctx.arcTo(x,y, x+r,y, r);
+  ctx.moveTo(x+r,y);
+  ctx.lineTo(x+w-r,y);ctx.arcTo(x+w,y,x+w,y+r,r);
+  ctx.lineTo(x+w,y+h-r);ctx.arcTo(x+w,y+h,x+w-r,y+h,r);
+  ctx.lineTo(x+r,y+h);ctx.arcTo(x,y+h,x,y+h-r,r);
+  ctx.lineTo(x,y+r);ctx.arcTo(x,y,x+r,y,r);
   ctx.closePath();
 }
 
-// ── Main loop ──
-function loop() {
-  if (!gameRunning) { rafId = null; return; }
-
+// ══════════════════════════════════════
+//  MAIN LOOP
+// ══════════════════════════════════════
+function loop(){
+  if(!gameRunning){rafId=null;return;}
   drawBg();
-
-  const me = snapshot.find(p => p.id === myId);
-  if (me) { updateCam(me); updateHudPos(me); }
-
+  const me=playerMap[myId];  // [FIX] O(1) lookup
+  if(me){updateCam(me);updateHudPos(me);}
   drawGrid();
   drawBorder();
   drawOrbs();
-  snapshot.forEach(p => drawPlayer(p, p.id === myId));
-
-  rafId = requestAnimationFrame(loop);
+  Object.values(monsterMap).forEach(m=>drawMonster(m));
+  Object.values(playerMap).forEach(p=>drawPlayer(p,p.id===myId));
+  rafId=requestAnimationFrame(loop);
 }
 </script>
 </body>
