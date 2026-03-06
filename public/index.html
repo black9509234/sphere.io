@@ -48,10 +48,8 @@ body { background:#fff; font-family:'Segoe UI',sans-serif; overflow:hidden; colo
 #hp-bar-wrap { display:flex; align-items:center; gap:5px; }
 #hp-track    { width:60px; height:5px; background:#eee; border-radius:3px; overflow:hidden; }
 #hp-fill     { height:100%; background:#e05050; border-radius:3px; transition:width .3s; width:100%; }
-
 #logout-btn { position:fixed; top:8px; right:14px; z-index:11; background:#fff; border:1px solid #ddd; color:#888; font-family:'Courier New',monospace; font-size:11px; padding:4px 12px; cursor:pointer; transition:all .12s; display:none; letter-spacing:.06em; }
 #logout-btn:hover { border-color:#e02020; color:#e02020; }
-
 .ax { position:fixed; font-family:'Courier New',monospace; font-size:10px; color:#ccc; pointer-events:none; display:none; }
 
 /* ══ CHAT ══ */
@@ -64,7 +62,6 @@ body { background:#fff; font-family:'Segoe UI',sans-serif; overflow:hidden; colo
 .chat-line .ct { color:#333; }
 .chat-line.sys   { color:#aaa; font-style:italic; font-size:11px; }
 .chat-line.lvlup { color:#c07000; font-size:11px; }
-.chat-line.kill  { color:#888; font-size:11px; }
 #chat-input-row { display:flex; border:1px solid #e0e0e0; background:rgba(255,255,255,0.96); }
 #chat-input { flex:1; border:none; outline:none; padding:8px 10px; font-size:12px; font-family:'Segoe UI',sans-serif; background:transparent; color:#222; caret-color:#1a6fff; }
 #chat-input::placeholder { color:#bbb; }
@@ -74,8 +71,7 @@ body { background:#fff; font-family:'Segoe UI',sans-serif; overflow:hidden; colo
 /* ══ LEVEL-UP FLASH ══ */
 #levelup-flash { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:50; pointer-events:none; font-size:28px; font-weight:900; color:#1a6fff; opacity:0; transition:opacity .2s; white-space:nowrap; }
 
-/* ══ DAMAGE NUMBERS ══ */
-.dmg-num { position:fixed; pointer-events:none; font-family:'Courier New',monospace; font-size:14px; font-weight:700; z-index:30; }
+/* ══ DAMAGE NUMBERS (canvas-drawn, no DOM) ══ */
 </style>
 </head>
 <body>
@@ -218,44 +214,46 @@ function handleAuth() {
   document.getElementById(id).addEventListener('keydown', e => { if (e.key==='Enter') handleAuth(); }));
 
 // ══════════════════════════════════════
-//  ENGINE STATE
+//  ENGINE
 // ══════════════════════════════════════
 const canvas = document.getElementById('canvas');
 const ctx    = canvas.getContext('2d');
-function resize() { canvas.width=window.innerWidth; canvas.height=window.innerHeight; }
+function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
 resize();
 window.addEventListener('resize', resize);
 
 let socket, myId=null, worldW=3000, worldH=3000;
-let playerMap   = {};  // id→player  [FIX] Map for O(1) lookup instead of O(n) find
-let orbMap      = {};
-let monsterMap  = {};
-const TILE=60;
+let playerMap  = {};
+let orbMap     = {};
+let monsterMap = {};
+const TILE = 60;
 
 const keys = { up:false, down:false, left:false, right:false };
 let lastKeys={}, gameRunning=false, rafId=null;
-let attackCooldown=false;  // Z key cooldown flag
+let attackCooldown = false;
 
 // ══════════════════════════════════════
-//  INPUT  [FIX] single keydown listener, no duplication
+//  INPUT
 // ══════════════════════════════════════
 window.addEventListener('keydown', e => {
-  // Enter opens chat (only when not already focused and game is running)
   if (e.key==='Enter' && !chatFocused() && gameRunning) {
     chatInput.focus(); e.preventDefault(); return;
   }
   if (chatFocused()) return;
-  // Z = attack nearest monster
-  if ((e.key==='z'||e.key==='Z') && gameRunning) { tryAttack(); return; }
+  if ((e.key==='z' || e.key==='Z') && gameRunning) { tryAttack(); return; }
   applyKey(e, true); sendKeys();
 });
 window.addEventListener('keyup', e => {
   if (chatFocused()) return;
   applyKey(e, false); sendKeys();
 });
+// [FIX #8 related] release all keys when window loses focus
+window.addEventListener('blur', () => {
+  keys.up=keys.down=keys.left=keys.right=false;
+  sendKeys();
+});
 
 function chatFocused() { return document.activeElement === chatInput; }
-
 function applyKey(e, v) {
   if (e.key==='ArrowUp'   ||e.key==='w'||e.key==='W') keys.up    = v;
   if (e.key==='ArrowDown' ||e.key==='s'||e.key==='S') keys.down  = v;
@@ -264,16 +262,10 @@ function applyKey(e, v) {
 }
 function sendKeys() {
   if (!socket) return;
-  const ch = keys.up!==lastKeys.up||keys.down!==lastKeys.down||
-             keys.left!==lastKeys.left||keys.right!==lastKeys.right;
-  if (ch) { socket.emit('keys',{...keys}); lastKeys={...keys}; }
+  const ch = keys.up!==lastKeys.up || keys.down!==lastKeys.down ||
+             keys.left!==lastKeys.left || keys.right!==lastKeys.right;
+  if (ch) { socket.emit('keys', {...keys}); lastKeys = {...keys}; }
 }
-
-// [FIX] Reset all keys on focus loss to prevent stuck movement
-window.addEventListener('blur', () => {
-  keys.up=keys.down=keys.left=keys.right=false;
-  sendKeys();
-});
 
 // ══════════════════════════════════════
 //  ATTACK
@@ -282,7 +274,6 @@ function tryAttack() {
   if (attackCooldown || !socket) return;
   const me = playerMap[myId];
   if (!me) return;
-  // Find nearest monster within visible range
   let nearest=null, nearDist=Infinity;
   for (const m of Object.values(monsterMap)) {
     const d = Math.hypot(me.x-m.x, me.y-m.y);
@@ -292,8 +283,6 @@ function tryAttack() {
   socket.emit('attack', { monsterId: nearest.id });
   attackCooldown = true;
   setTimeout(() => { attackCooldown=false; }, 400);
-  // Visual slash effect
-  spawnDmgNum(nearest.x, nearest.y, '⚔', '#555');
 }
 
 // ══════════════════════════════════════
@@ -308,7 +297,7 @@ function escHtml(s) {
 function addChatLine(safeHtml, cls='') {
   const div = document.createElement('div');
   div.className = 'chat-line' + (cls ? ' '+cls : '');
-  div.innerHTML = safeHtml;  // caller must ensure safe HTML
+  div.innerHTML = safeHtml;
   chatLog.appendChild(div);
   while (chatLog.children.length > MAX_CHAT_LINES) chatLog.removeChild(chatLog.firstChild);
   chatLog.scrollTop = chatLog.scrollHeight;
@@ -321,40 +310,50 @@ function sendChat() {
   chatInput.blur();
 }
 chatInput.addEventListener('keydown', e => {
-  if (e.key==='Enter') { sendChat(); e.preventDefault(); }
+  if (e.key==='Enter')  { sendChat(); e.preventDefault(); }
   if (e.key==='Escape') chatInput.blur();
 });
 
 // ══════════════════════════════════════
-//  DAMAGE NUMBERS
+//  DAMAGE NUMBERS  [FIX #5] world-space, canvas-drawn
 // ══════════════════════════════════════
+// Stored in world coordinates so camera movement doesn't misplace them
+const dmgNums = []; // { wx, wy, text, color, elapsed, duration }
+
 function spawnDmgNum(worldX, worldY, text, color) {
-  const sx = worldX - camX;
-  const sy = worldY - camY;
-  const el = document.createElement('div');
-  el.className = 'dmg-num';
-  el.style.cssText = `left:${sx}px;top:${sy}px;color:${color};`;
-  el.textContent = text;
-  document.body.appendChild(el);
-  let tick=0;
-  const ani = setInterval(() => {
-    tick++;
-    el.style.top  = (sy - tick*1.5) + 'px';
-    el.style.opacity = String(1 - tick/20);
-    if (tick >= 20) { clearInterval(ani); el.remove(); }
-  }, 30);
+  dmgNums.push({ wx: worldX, wy: worldY, text, color, elapsed: 0, duration: 1.1 }); // 1.1s lifetime
+}
+
+function drawDmgNums(dt) {
+  for (let i = dmgNums.length - 1; i >= 0; i--) {
+    const n = dmgNums[i];
+    n.elapsed += dt;  // [FIX] dt-based: consistent duration regardless of fps
+    if (n.elapsed >= n.duration) { dmgNums.splice(i, 1); continue; }
+    const t     = n.elapsed / n.duration;   // 0→1
+    const sx    = n.wx - camX;
+    const sy    = n.wy - camY - t * 50;    // float upward 50px over lifetime
+    const alpha = 1 - t;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle   = n.color;
+    ctx.font        = 'bold 14px Courier New, monospace';
+    ctx.textAlign   = 'center';
+    ctx.textBaseline= 'middle';
+    ctx.fillText(n.text, sx, sy);
+    ctx.restore();
+  }
 }
 
 // ══════════════════════════════════════
 //  LEVEL-UP FLASH
 // ══════════════════════════════════════
-let flashTimer=null;
+let flashTimer = null;
 function showLevelUpFlash(level) {
-  const el=document.getElementById('levelup-flash');
-  el.textContent=`⬆ LEVEL ${level}!`;
-  el.style.opacity='1';
+  const el = document.getElementById('levelup-flash');
+  el.textContent = `⬆ LEVEL ${level}!`;
+  el.style.opacity = '1';
   if (flashTimer) clearTimeout(flashTimer);
-  flashTimer = setTimeout(()=>{ el.style.opacity='0'; }, 2200);
+  flashTimer = setTimeout(() => { el.style.opacity='0'; }, 2200);
 }
 
 // ══════════════════════════════════════
@@ -362,140 +361,139 @@ function showLevelUpFlash(level) {
 // ══════════════════════════════════════
 function startGame(username) {
   if (gameRunning) return;
-  gameRunning=true;
+  gameRunning = true;
 
   document.getElementById('auth-screen').style.display='none';
   document.getElementById('hud').style.display='flex';
   document.getElementById('logout-btn').style.display='block';
   document.getElementById('chat-wrap').style.display='flex';
-  ['al-xp','al-xn','al-yp','al-yn'].forEach(id=>document.getElementById(id).style.display='block');
-  document.getElementById('h-user').textContent=username;
+  ['al-xp','al-xn','al-yp','al-yn'].forEach(id => document.getElementById(id).style.display='block');
+  document.getElementById('h-user').textContent = username;
 
-  socket=io();
-  socket.on('connect', ()=>socket.emit('join',{name:username}));
+  socket = io();
+  socket.on('connect', () => socket.emit('join', { name: username }));
 
-  socket.on('welcome', d=>{
+  socket.on('welcome', d => {
     myId=d.id; worldW=d.worldW; worldH=d.worldH;
-    addChatLine('<span class="ct">월드에 접속했습니다. WASD 이동 · Z 공격 · Enter 채팅</span>','sys');
+    addChatLine('<span class="ct">월드에 접속했습니다. WASD 이동 · Z 공격 · Enter 채팅</span>', 'sys');
   });
 
-  socket.on('state', d=>{
-    // Rebuild playerMap [FIX] O(1) lookup
+  socket.on('state', d => {
     playerMap={};
-    (d.players||[]).forEach(p=>{ playerMap[p.id]=p; });
+    (d.players||[]).forEach(p => { playerMap[p.id]=p; });
     monsterMap={};
-    (d.monsters||[]).forEach(m=>{ monsterMap[m.id]=m; });
+    (d.monsters||[]).forEach(m => { monsterMap[m.id]=m; });
     orbMap={};
-    (d.orbs||[]).forEach(o=>{ orbMap[o.id]=o; });
+    (d.orbs||[]).forEach(o => { orbMap[o.id]=o; });
 
     elCnt.textContent = d.players.length;
-
     const me = playerMap[myId];
     if (me) {
-      elLv.textContent    = me.level;
-      elXp.textContent    = me.xp;
-      elXpMax.textContent = me.xpMax;
-      elXpFill.style.width = (me.xp / me.xpMax * 100).toFixed(1)+'%';
-      elHp.textContent    = me.hp;
-      elHpFill.style.width = (me.hp / me.maxHp * 100).toFixed(1)+'%';
+      elLv.textContent     = me.level;
+      elXp.textContent     = me.xp;
+      elXpMax.textContent  = me.xpMax;
+      elXpFill.style.width = (me.xp / me.xpMax * 100).toFixed(1) + '%';
+      elHp.textContent     = me.hp;
+      elHpFill.style.width = (me.hp / me.maxHp * 100).toFixed(1) + '%';
     }
   });
 
-  socket.on('damaged', ({dmg, hp, by})=>{
-    // Flash HP bar red briefly
-    elHpFill.style.background='#ff3030';
-    setTimeout(()=>{ elHpFill.style.background='#e05050'; }, 300);
-    // Show damage number on screen center (player took damage)
-    const me=playerMap[myId];
-    if (me) spawnDmgNum(me.x, me.y-30, `-${dmg}`, '#e02020');
+  // [FIX #9] damaged event only triggers visual — hp comes from state
+  socket.on('damaged', ({ dmg }) => {
+    elHpFill.style.background = '#ff3030';
+    setTimeout(() => { elHpFill.style.background='#e05050'; }, 300);
+    const me = playerMap[myId];
+    if (me) spawnDmgNum(me.x, me.y - me.r - 10, `-${dmg}`, '#e02020');
   });
 
-  socket.on('died', ({x,y})=>{
-    addChatLine('<span>💀 쓰러졌습니다. 부활했습니다.</span>','sys');
+  socket.on('died', () => {
+    addChatLine('<span>💀 쓰러졌습니다. 부활했습니다.</span>', 'sys');
   });
 
-  socket.on('attackResult', ({monsterId, dmg, hp})=>{
-    const m=monsterMap[monsterId];
-    if (m) spawnDmgNum(m.x, m.y-m.r-10, String(dmg), '#333');
+  socket.on('attackResult', ({ monsterId, dmg }) => {
+    const m = monsterMap[monsterId];
+    if (m) spawnDmgNum(m.x, m.y - m.r - 8, String(dmg), '#333');
   });
 
-  socket.on('monsterDied', ({monsterId, killerId, xp})=>{
+  socket.on('monsterDied', ({ monsterId, killerId, xp }) => {
     delete monsterMap[monsterId];
-    if (killerId===myId) {
-      addChatLine(`<span>⚔ 처치! +${xp} XP</span>`,'sys');
-    }
+    if (killerId === myId) addChatLine(`<span>⚔ 처치! +${xp} XP</span>`, 'sys');
   });
 
-  socket.on('levelUp', ({id, level, name})=>{
-    // [FIX] escHtml on name before inserting into DOM
-    if (id===myId) showLevelUpFlash(level);
-    addChatLine(`✦ <b>${escHtml(name)}</b> 님이 레벨 <b>${level}</b>이 되었습니다!`,'lvlup');
+  socket.on('levelUp', ({ id, level, name }) => {
+    if (id === myId) showLevelUpFlash(level);
+    addChatLine(`✦ <b>${escHtml(name)}</b> 님이 레벨 <b>${level}</b>이 되었습니다!`, 'lvlup');
   });
 
-  socket.on('chat', ({id, name, text})=>{
-    // [FIX] both name and text are escaped
-    bubbles[id]={ text, expiry:Date.now()+3000 };
+  socket.on('chat', ({ id, name, text }) => {
+    bubbles[id] = { text, expiry: Date.now() + 3000 };
     addChatLine(`<span class="cn">${escHtml(name)}</span><span class="ct">${escHtml(text)}</span>`);
   });
 
   if (rafId) cancelAnimationFrame(rafId);
-  rafId=requestAnimationFrame(loop);
+  lastTime = performance.now();
+  rafId = requestAnimationFrame(loop);
 }
 
 function doLogout() {
-  gameRunning=false;
+  gameRunning = false;
   if (rafId) { cancelAnimationFrame(rafId); rafId=null; }
-  // [FIX] reset movement keys on logout
   keys.up=keys.down=keys.left=keys.right=false;
   lastKeys={};
-  myId=null; playerMap={}; orbMap={}; monsterMap={};
+  myId=null; playerMap={}; orbMap={}; monsterMap={}; dmgNums.length=0;
   if (socket) { socket.disconnect(); socket=null; }
   document.getElementById('hud').style.display='none';
   document.getElementById('logout-btn').style.display='none';
   document.getElementById('chat-wrap').style.display='none';
-  ['al-xp','al-xn','al-yp','al-yn'].forEach(id=>document.getElementById(id).style.display='none');
+  ['al-xp','al-xn','al-yp','al-yn'].forEach(id => document.getElementById(id).style.display='none');
   document.getElementById('auth-screen').style.display='flex';
   document.getElementById('i-pass').value='';
   document.getElementById('i-cfm').value='';
   chatLog.innerHTML='';
   camX=0; camY=0; lastPosStr='';
-  setMsg('DISCONNECTED','info');
+  setMsg('DISCONNECTED', 'info');
 }
 
 // ══════════════════════════════════════
-//  CAMERA
+//  CAMERA  [FIX #8] deltaTime-based lerp — frame-rate independent
 // ══════════════════════════════════════
 let camX=0, camY=0;
-function updateCam(me) {
-  const tx=me.x-canvas.width/2, ty=me.y-canvas.height/2;
-  camX+=(tx-camX)*0.12;
-  camY+=(ty-camY)*0.12;
-  camX=Math.max(0,Math.min(Math.max(0,worldW-canvas.width), camX));
-  camY=Math.max(0,Math.min(Math.max(0,worldH-canvas.height),camY));
+const CAM_SPEED = 8;  // units per second (lerp rate, not px/frame)
+
+function updateCam(me, dt) {
+  const tx = me.x - canvas.width  / 2;
+  const ty = me.y - canvas.height / 2;
+  // Frame-rate independent lerp: factor = 1 - e^(-speed * dt)
+  const f = 1 - Math.exp(-CAM_SPEED * dt);
+  camX += (tx - camX) * f;
+  camY += (ty - camY) * f;
+  camX = Math.max(0, Math.min(Math.max(0, worldW - canvas.width),  camX));
+  camY = Math.max(0, Math.min(Math.max(0, worldH - canvas.height), camY));
 }
-function toMath(sx,sy){ return{mx:Math.round(sx-worldW/2),my:Math.round(worldH/2-sy)}; }
+
+function toMath(sx,sy) { return { mx: Math.round(sx-worldW/2), my: Math.round(worldH/2-sy) }; }
 let lastPosStr='';
-function updateHudPos(me){
-  const{mx,my}=toMath(me.x,me.y);
-  const s=`(${mx},${my})`;
-  if(s!==lastPosStr){elPos.textContent=lastPosStr=s;}
+function updateHudPos(me) {
+  const {mx,my} = toMath(me.x, me.y);
+  const s = `(${mx},${my})`;
+  if (s !== lastPosStr) { elPos.textContent = lastPosStr = s; }
 }
 
 // ══════════════════════════════════════
-//  RENDER HELPERS
+//  RENDER
 // ══════════════════════════════════════
-const C={
+const C = {
   bg:'#fff', grid:'#eeeeee', gridMaj:'#e0e0e0',
   axis:'#cccccc', border:'#aaaaaa',
   blue:'#1a6fff', muted:'#aaaaaa', shadow:'rgba(0,0,0,0.07)',
   orb:'#f0a000', orbS:'#c07800',
 };
 
-function drawBg(){
+function drawBg() {
   ctx.fillStyle=C.bg; ctx.fillRect(0,0,canvas.width,canvas.height);
 }
 
-function drawGrid(){
+function drawGrid() {
   ctx.strokeStyle=C.grid; ctx.lineWidth=1;
   let sx0=Math.floor(camX/TILE)*TILE, sy0=Math.floor(camY/TILE)*TILE;
   ctx.beginPath();
@@ -512,9 +510,9 @@ function drawGrid(){
   const axX=worldW/2-camX, axY=worldH/2-camY;
   ctx.strokeStyle=C.axis; ctx.lineWidth=1.5; ctx.setLineDash([6,4]);
   ctx.beginPath();
-  ctx.moveTo(0,axY);ctx.lineTo(canvas.width,axY);
-  ctx.moveTo(axX,0);ctx.lineTo(axX,canvas.height);
-  ctx.stroke(); ctx.setLineDash([]);
+  ctx.moveTo(0,axY); ctx.lineTo(canvas.width,axY);
+  ctx.moveTo(axX,0); ctx.lineTo(axX,canvas.height);
+  ctx.stroke(); ctx.setLineDash([]);  // always reset dash
   ctx.fillStyle=C.muted; ctx.font='9px Courier New,monospace';
   const step=M;
   ctx.textAlign='center';
@@ -527,139 +525,132 @@ function drawGrid(){
   }
   ctx.fillStyle=C.blue; ctx.font='bold 10px Courier New,monospace';
   ctx.textAlign='left'; ctx.fillText('O',axX+4,axY-5);
-  drawArrow(canvas.width-8,axY,1,0); drawArrow(axX,44,0,-1);
+  drawArrow(canvas.width-8,axY,1,0);
+  drawArrow(axX,44,0,-1);
 }
 
-function drawArrow(x,y,dx,dy){
+function drawArrow(x,y,dx,dy) {
   const s=6; ctx.save(); ctx.fillStyle=C.axis;
   ctx.translate(x,y); ctx.rotate(Math.atan2(dy,dx));
-  ctx.beginPath(); ctx.moveTo(0,0);ctx.lineTo(-s,-s/2);ctx.lineTo(-s,s/2);
+  ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-s,-s/2); ctx.lineTo(-s,s/2);
   ctx.closePath(); ctx.fill(); ctx.restore();
 }
 
-function drawBorder(){
+function drawBorder() {
   ctx.strokeStyle=C.border; ctx.lineWidth=2;
   ctx.strokeRect(-camX,-camY,worldW,worldH);
-  const hw=worldW/2,hh=worldH/2;
+  const hw=worldW/2, hh=worldH/2;
   ctx.fillStyle='#ccc'; ctx.font='9px Courier New,monospace';
   [{sx:-camX+4,sy:-camY+12,t:`(−${hw},+${hh})`,a:'left'},
    {sx:-camX+worldW-4,sy:-camY+12,t:`(+${hw},+${hh})`,a:'right'},
    {sx:-camX+4,sy:-camY+worldH-5,t:`(−${hw},−${hh})`,a:'left'},
    {sx:-camX+worldW-4,sy:-camY+worldH-5,t:`(+${hw},−${hh})`,a:'right'}]
-  .forEach(c=>{ctx.textAlign=c.a;ctx.fillText(c.t,c.sx,c.sy);});
+  .forEach(c => { ctx.textAlign=c.a; ctx.fillText(c.t,c.sx,c.sy); });
 }
 
-function drawOrbs(){
-  const now=Date.now();
-  for(const o of Object.values(orbMap)){
-    const sx=o.x-camX,sy=o.y-camY;
-    if(sx<-20||sx>canvas.width+20||sy<-20||sy>canvas.height+20)continue;
+function drawOrbs() {
+  const now = Date.now();
+  for (const o of Object.values(orbMap)) {
+    const sx=o.x-camX, sy=o.y-camY;
+    if(sx<-20||sx>canvas.width+20||sy<-20||sy>canvas.height+20) continue;
     const pulse=1+0.12*Math.sin(now*0.004+o.id);
-    ctx.beginPath();ctx.arc(sx,sy,9*pulse,0,Math.PI*2);
-    ctx.fillStyle='rgba(240,160,0,0.15)';ctx.fill();
-    ctx.beginPath();ctx.arc(sx,sy,6*pulse,0,Math.PI*2);
-    ctx.fillStyle=C.orb;ctx.strokeStyle=C.orbS;ctx.lineWidth=1.5;
-    ctx.fill();ctx.stroke();
+    ctx.beginPath(); ctx.arc(sx,sy,9*pulse,0,Math.PI*2);
+    ctx.fillStyle='rgba(240,160,0,0.15)'; ctx.fill();
+    ctx.beginPath(); ctx.arc(sx,sy,6*pulse,0,Math.PI*2);
+    ctx.fillStyle=C.orb; ctx.strokeStyle=C.orbS; ctx.lineWidth=1.5;
+    ctx.fill(); ctx.stroke();
   }
 }
 
-// ── Monster shapes ──
-function drawMonster(m){
+// [FIX #6] each case has its own block {} to allow const declarations
+// [FIX #7] ctx.save/restore around each shape to isolate lineWidth etc.
+function drawMonster(m) {
   const sx=m.x-camX, sy=m.y-camY;
-  if(sx<-60||sx>canvas.width+60||sy<-60||sy>canvas.height+60)return;
+  if(sx<-80||sx>canvas.width+80||sy<-80||sy>canvas.height+80) return;
 
+  const now = Date.now();
+  ctx.save();
   ctx.strokeStyle=m.color; ctx.fillStyle=m.color;
-  ctx.lineWidth=2;
 
-  switch(m.type){
-    case 'dot':
-      // Simple filled circle
+  switch(m.type) {
+    case 'dot': {
+      ctx.lineWidth=2;
       ctx.beginPath(); ctx.arc(sx,sy,m.r,0,Math.PI*2);
       ctx.fill();
       break;
-
-    case 'line':
-      // Rotating line segment
-      const ang=(Date.now()*0.002)%(Math.PI*2);
-      ctx.save(); ctx.translate(sx,sy); ctx.rotate(ang);
+    }
+    case 'line': {
+      const ang = (now * 0.002) % (Math.PI * 2);
       ctx.lineWidth=3;
+      ctx.translate(sx,sy); ctx.rotate(ang);
       ctx.beginPath(); ctx.moveTo(-m.r,0); ctx.lineTo(m.r,0);
-      ctx.stroke(); ctx.restore();
+      ctx.stroke();
       break;
-
-    case 'triangle':
-      // Equilateral triangle
-      ctx.save(); ctx.translate(sx,sy);
-      ctx.rotate(Date.now()*0.001);
+    }
+    case 'triangle': {
+      ctx.lineWidth=2;
+      ctx.translate(sx,sy); ctx.rotate(now*0.001);
       ctx.beginPath();
       for(let i=0;i<3;i++){
         const a=(i/3)*Math.PI*2 - Math.PI/2;
-        i===0?ctx.moveTo(Math.cos(a)*m.r,Math.sin(a)*m.r)
-             :ctx.lineTo(Math.cos(a)*m.r,Math.sin(a)*m.r);
+        i===0 ? ctx.moveTo(Math.cos(a)*m.r, Math.sin(a)*m.r)
+              : ctx.lineTo(Math.cos(a)*m.r, Math.sin(a)*m.r);
       }
-      ctx.closePath(); ctx.stroke(); ctx.restore();
+      ctx.closePath(); ctx.stroke();
       break;
-
-    case 'square':
-      // Rotating square (hollow)
-      ctx.save(); ctx.translate(sx,sy);
-      ctx.rotate(Date.now()*0.0007);
+    }
+    case 'square': {
+      ctx.lineWidth=2;
+      ctx.translate(sx,sy); ctx.rotate(now*0.0007);
       ctx.strokeRect(-m.r,-m.r,m.r*2,m.r*2);
-      ctx.restore();
       break;
+    }
   }
+  ctx.restore();  // [FIX #7] restore after shape
 
-  // HP bar above monster
+  // HP bar (drawn after restore so it's in normal space)
   const barW=m.r*2+10, barH=4;
   const hpPct=m.hp/m.maxHp;
   const bx=sx-barW/2, by=sy-m.r-10;
-  ctx.fillStyle='#eee';
-  ctx.fillRect(bx,by,barW,barH);
-  ctx.fillStyle= hpPct>0.5 ? '#44aa44' : hpPct>0.25 ? '#e09020' : '#e03030';
+  ctx.fillStyle='#eee'; ctx.fillRect(bx,by,barW,barH);
+  ctx.fillStyle = hpPct>0.5 ? '#44aa44' : hpPct>0.25 ? '#e09020' : '#e03030';
   ctx.fillRect(bx,by,barW*hpPct,barH);
 }
 
-function drawPlayer(p,isMe){
-  const sx=p.x-camX,sy=p.y-camY;
-  if(sx<-80||sx>canvas.width+80||sy<-80||sy>canvas.height+80)return;
+function drawPlayer(p, isMe) {
+  const sx=p.x-camX, sy=p.y-camY;
+  if(sx<-80||sx>canvas.width+80||sy<-80||sy>canvas.height+80) return;
 
-  // shadow
-  ctx.beginPath();ctx.arc(sx+2,sy+3,p.r,0,Math.PI*2);
-  ctx.fillStyle=C.shadow;ctx.fill();
-  // body
-  ctx.beginPath();ctx.arc(sx,sy,p.r,0,Math.PI*2);
-  ctx.fillStyle=isMe?'#1a6fff':'#5599ff';ctx.fill();
-  // stroke
-  ctx.beginPath();ctx.arc(sx,sy,p.r,0,Math.PI*2);
+  ctx.beginPath(); ctx.arc(sx+2,sy+3,p.r,0,Math.PI*2);
+  ctx.fillStyle=C.shadow; ctx.fill();
+  ctx.beginPath(); ctx.arc(sx,sy,p.r,0,Math.PI*2);
+  ctx.fillStyle=isMe?'#1a6fff':'#5599ff'; ctx.fill();
+  ctx.beginPath(); ctx.arc(sx,sy,p.r,0,Math.PI*2);
   ctx.strokeStyle=isMe?'#003fbb':'#2266cc';
-  ctx.lineWidth=isMe?3:2;ctx.stroke();
+  ctx.lineWidth=isMe?3:2; ctx.stroke();
 
-  // name
-  ctx.fillStyle='#333';ctx.font='bold 12px Segoe UI,sans-serif';
-  ctx.textAlign='center';ctx.textBaseline='middle';
-  ctx.fillText(p.name,sx,sy-p.r-22);
-  // level
-  ctx.fillStyle='#888';ctx.font='10px Courier New,monospace';
-  ctx.fillText(`Lv.${p.level}`,sx,sy-p.r-11);
-  // coords
-  const{mx,my}=toMath(p.x,p.y);
-  ctx.fillStyle=C.muted;ctx.font='10px Courier New,monospace';
-  ctx.fillText(`(${mx},${my})`,sx,sy-p.r-1);
+  ctx.fillStyle='#333'; ctx.font='bold 12px Segoe UI,sans-serif';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(p.name, sx, sy-p.r-22);
+  ctx.fillStyle='#888'; ctx.font='10px Courier New,monospace';
+  ctx.fillText(`Lv.${p.level}`, sx, sy-p.r-11);
+  const {mx,my}=toMath(p.x,p.y);
+  ctx.fillStyle=C.muted; ctx.font='10px Courier New,monospace';
+  ctx.fillText(`(${mx},${my})`, sx, sy-p.r-1);
 
-  // chat bubble
   const bubble=bubbles[p.id];
-  if(bubble&&Date.now()<bubble.expiry){
-    const bx=sx,by=sy-p.r-44;
+  if(bubble && Date.now()<bubble.expiry){
+    const bx=sx, by=sy-p.r-44;
     ctx.font='12px Segoe UI,sans-serif';
     const tw=Math.min(ctx.measureText(bubble.text).width+16,160);
     const bh=24;
     ctx.fillStyle='rgba(255,255,255,0.95)';
-    ctx.strokeStyle='#ddd';ctx.lineWidth=1;
+    ctx.strokeStyle='#ddd'; ctx.lineWidth=1;
     roundRect(ctx,bx-tw/2,by-bh/2,tw,bh,5);
-    ctx.fill();ctx.stroke();
-    ctx.fillStyle='#222';ctx.textBaseline='middle';
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#222'; ctx.textBaseline='middle';
     ctx.save();
-    ctx.beginPath();ctx.rect(bx-tw/2+4,by-bh/2,tw-8,bh);ctx.clip();
+    ctx.beginPath(); ctx.rect(bx-tw/2+4,by-bh/2,tw-8,bh); ctx.clip();
     ctx.fillText(bubble.text,bx,by);
     ctx.restore();
   }
@@ -669,27 +660,36 @@ function drawPlayer(p,isMe){
 function roundRect(ctx,x,y,w,h,r){
   ctx.beginPath();
   ctx.moveTo(x+r,y);
-  ctx.lineTo(x+w-r,y);ctx.arcTo(x+w,y,x+w,y+r,r);
-  ctx.lineTo(x+w,y+h-r);ctx.arcTo(x+w,y+h,x+w-r,y+h,r);
-  ctx.lineTo(x+r,y+h);ctx.arcTo(x,y+h,x,y+h-r,r);
-  ctx.lineTo(x,y+r);ctx.arcTo(x,y,x+r,y,r);
+  ctx.lineTo(x+w-r,y); ctx.arcTo(x+w,y,x+w,y+r,r);
+  ctx.lineTo(x+w,y+h-r); ctx.arcTo(x+w,y+h,x+w-r,y+h,r);
+  ctx.lineTo(x+r,y+h); ctx.arcTo(x,y+h,x,y+h-r,r);
+  ctx.lineTo(x,y+r); ctx.arcTo(x,y,x+r,y,r);
   ctx.closePath();
 }
 
 // ══════════════════════════════════════
-//  MAIN LOOP
+//  MAIN LOOP  — 60fps via rAF + deltaTime
 // ══════════════════════════════════════
-function loop(){
-  if(!gameRunning){rafId=null;return;}
+let lastTime = 0;
+
+function loop(timestamp) {
+  if (!gameRunning) { rafId=null; return; }
+
+  // [FIX #8] deltaTime in seconds, clamped to avoid spiral of death on tab focus
+  const dt = Math.min((timestamp - lastTime) / 1000, 0.1);
+  lastTime = timestamp;
+
   drawBg();
-  const me=playerMap[myId];  // [FIX] O(1) lookup
-  if(me){updateCam(me);updateHudPos(me);}
+  const me = playerMap[myId];
+  if (me) { updateCam(me, dt); updateHudPos(me); }
   drawGrid();
   drawBorder();
   drawOrbs();
-  Object.values(monsterMap).forEach(m=>drawMonster(m));
-  Object.values(playerMap).forEach(p=>drawPlayer(p,p.id===myId));
-  rafId=requestAnimationFrame(loop);
+  Object.values(monsterMap).forEach(m => drawMonster(m));
+  Object.values(playerMap).forEach(p => drawPlayer(p, p.id===myId));
+  drawDmgNums(dt);  // [FIX #5] canvas-drawn, world-space
+
+  rafId = requestAnimationFrame(loop);
 }
 </script>
 </body>
