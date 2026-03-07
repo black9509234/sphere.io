@@ -480,6 +480,22 @@
             transition: .16s;
         }
 
+        #lang-btn {
+            position: fixed;
+            top: 16px;
+            right: 134px;
+            z-index: 12;
+            padding: 10px 12px;
+            border: 1px solid rgba(17, 17, 17, .12);
+            border-radius: 2px;
+            background: rgba(255, 255, 255, .88);
+            color: var(--accent);
+            font: 700 11px var(--mono);
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            cursor: pointer;
+        }
+
         #logout-btn:hover {
             border-color: rgba(17, 17, 17, .14);
             color: var(--accent);
@@ -668,11 +684,17 @@
             }
 
             #logout-btn,
-            #chat-wrap {
+            #chat-wrap,
+            #lang-btn {
                 right: 12px;
             }
 
             #logout-btn {
+                top: 12px;
+            }
+
+            #lang-btn {
+                right: 126px;
                 top: 12px;
             }
 
@@ -746,30 +768,30 @@
 <body>
     <div id="auth-screen">
         <div class="auth-box">
-            <div class="auth-titlebar"><span>SPHERE.IO // ACCESS NODE</span></div>
+            <div class="auth-titlebar"><span data-i18n="auth_titlebar">SPHERE.IO // ACCESS NODE</span></div>
             <div class="auth-body">
-                <div class="auth-kicker">WORLD ACCESS</div>
+                <div class="auth-kicker" data-i18n="auth_kicker">WORLD ACCESS</div>
                 <div class="auth-title-row">
                     <div class="auth-title">sphere.io</div>
-                    <div class="auth-pill">TERMINAL UI</div>
+                    <div class="auth-pill" data-i18n="auth_pill">TERMINAL UI</div>
                 </div>
-                <div class="auth-sub">Compact terminal overlays. Lower visual weight, sharper hierarchy, less screen
+                <div class="auth-sub" data-i18n="auth_sub">Compact terminal overlays. Lower visual weight, sharper hierarchy, less screen
                     coverage.</div>
                 <div class="mode-row"><button class="mbtn on" id="btn-ln"
-                        onclick="setMode('login')">LOGIN</button><button class="mbtn" id="btn-su"
-                        onclick="setMode('signup')">REGISTER</button></div>
-                <div class="field"><label class="field-lbl">USER_ID</label>
+                        onclick="setMode('login')" data-i18n="btn_login">LOGIN</button><button class="mbtn" id="btn-su"
+                        onclick="setMode('signup')" data-i18n="btn_register">REGISTER</button></div>
+                <div class="field"><label class="field-lbl" data-i18n="field_user">USER_ID</label>
                     <div class="irow"><span class="ipfx">&gt;</span><input id="i-user" type="text"
-                            placeholder="username" maxlength="16" autocomplete="off" /></div>
+                            placeholder="username" data-i18n-placeholder="ph_user" maxlength="16" autocomplete="off" /></div>
                 </div>
-                <div class="field"><label class="field-lbl">PASSWORD</label>
+                <div class="field"><label class="field-lbl" data-i18n="field_pass">PASSWORD</label>
                     <div class="irow"><span class="ipfx">&gt;</span><input id="i-pass" type="password"
-                            placeholder="password" maxlength="32" /></div>
+                            placeholder="password" data-i18n-placeholder="ph_pass" maxlength="32" /></div>
                 </div>
                 <div class="field" id="cfm-row" style="display:none"><label
-                        class="field-lbl">CONFIRM_PASSWORD</label>
+                        class="field-lbl" data-i18n="field_confirm">CONFIRM_PASSWORD</label>
                     <div class="irow"><span class="ipfx">&gt;</span><input id="i-cfm" type="password"
-                            placeholder="confirm password" maxlength="32" /></div>
+                            placeholder="confirm password" data-i18n-placeholder="ph_confirm" maxlength="32" /></div>
                 </div>
                 <hr class="sep" /><button class="sbtn" onclick="handleAuth()"><span
                         id="sbtn-lbl">CONNECT</span></button>
@@ -778,20 +800,21 @@
         </div>
     </div>
     <canvas id="canvas"></canvas>
+    <button id="lang-btn" onclick="toggleLanguage()">KO</button>
     <div id="hud">
         <div class="hud-panel hud-brand-panel">
-            <div class="hud-overline">TACTICAL FEED</div>
+            <div class="hud-overline" data-i18n="hud_overline">TACTICAL FEED</div>
             <div class="hbrand">sphere.io</div>
-            <div class="hud-caption">Compact readout with angular panels and reduced obstruction.</div>
+            <div class="hud-caption" data-i18n="hud_caption">Compact readout with angular panels and reduced obstruction.</div>
         </div>
         <div class="hud-panel hud-stats">
             <div class="hud-chip">
-                <div class="hi-label">PLAYER</div>
+                <div class="hi-label" data-i18n="hud_player">PLAYER</div>
                 <div class="hi-value" id="h-user">guest</div>
-                <div class="hi-sub">connected pilot</div>
+                <div class="hi-sub" data-i18n="hud_player_sub">connected pilot</div>
             </div>
             <div class="hud-chip">
-                <div class="hi-line"><span class="hi-label">LEVEL</span><span class="hi-value">Lv.<span
+                <div class="hi-line"><span class="hi-label" data-i18n="hud_level">LEVEL</span><span class="hi-value">Lv.<span
                             id="h-lv">1</span></span></div>
                 <div class="stat-bar">
                     <div class="track">
@@ -801,61 +824,190 @@
                 </div>
             </div>
             <div class="hud-chip">
-                <div class="hi-line"><span class="hi-label">VITAL</span><span class="hi-value"><span
+                <div class="hi-line"><span class="hi-label" data-i18n="hud_vital">VITAL</span><span class="hi-value"><span
                             id="h-hp">100</span> HP</span></div>
                 <div class="stat-bar">
                     <div class="track">
                         <div id="hp-fill"></div>
                     </div>
-                    <div class="hi-sub">damage feedback stays visible without a bulky overlay</div>
+                    <div class="hi-sub" data-i18n="hud_vital_sub">damage feedback stays visible without a bulky overlay</div>
                 </div>
             </div>
             <div class="hud-chip">
-                <div class="hi-label">WORLD</div>
-                <div class="hi-line"><span class="hi-sub">Coords</span><span class="hi-value"
+                <div class="hi-label" data-i18n="hud_world">WORLD</div>
+                <div class="hi-line"><span class="hi-sub" data-i18n="hud_coords">Coords</span><span class="hi-value"
                         id="h-pos">X:0 Y:0</span></div>
-                <div class="hi-line"><span class="hi-sub">Online</span><span class="hi-value" id="h-cnt">0</span></div>
+                <div class="hi-line"><span class="hi-sub" data-i18n="hud_online">Online</span><span class="hi-value" id="h-cnt">0</span></div>
             </div>
             <div class="hud-chip interactive">
-                <div class="hi-line"><span class="hi-label">STATS</span><span class="stat-points" id="h-statpts">0 PT</span></div>
+                <div class="hi-line"><span class="hi-label" data-i18n="hud_stats">STATS</span><span class="stat-points" id="h-statpts">0 PT</span></div>
                 <div class="stat-list">
                     <div class="stat-row"><span class="stat-name">STR</span><span class="stat-meta" id="h-str">0</span><button class="stat-add" id="btn-str" onclick="allocateStat('str')" disabled>+</button></div>
                     <div class="stat-row"><span class="stat-name">AGI</span><span class="stat-meta" id="h-agi">0</span><button class="stat-add" id="btn-agi" onclick="allocateStat('agi')" disabled>+</button></div>
                     <div class="stat-row"><span class="stat-name">VIT</span><span class="stat-meta" id="h-vit">0</span><button class="stat-add" id="btn-vit" onclick="allocateStat('vit')" disabled>+</button></div>
+                    <div class="stat-row"><span class="stat-name">DEX</span><span class="stat-meta" id="h-dex">0</span><button class="stat-add" id="btn-dex" onclick="allocateStat('dex')" disabled>+</button></div>
+                    <div class="stat-row"><span class="stat-name">WIS</span><span class="stat-meta" id="h-wis">0</span><button class="stat-add" id="btn-wis" onclick="allocateStat('wis')" disabled>+</button></div>
+                    <div class="stat-row"><span class="stat-name">LUK</span><span class="stat-meta" id="h-luk">0</span><button class="stat-add" id="btn-luk" onclick="allocateStat('luk')" disabled>+</button></div>
                 </div>
             </div>
         </div>
     </div>
-    <button id="logout-btn" onclick="doLogout()">DISCONNECT</button>
+    <button id="logout-btn" onclick="doLogout()" data-i18n="btn_disconnect">DISCONNECT</button>
     <div id="controls-card">
-        <div class="control-kicker">CONTROLS</div>
-        <div class="control-title">KEYMAP</div>
+        <div class="control-kicker" data-i18n="controls_kicker">CONTROLS</div>
+        <div class="control-title" data-i18n="controls_title">KEYMAP</div>
         <div class="control-list">
-            <div class="control-row"><span>MOVE</span><span class="kbd">WASD</span></div>
-            <div class="control-row"><span>ATTACK</span><span class="kbd">LMB</span></div>
-            <div class="control-row"><span>CHAT</span><span class="kbd">ENTER</span></div>
-            <div class="control-row"><span>CLOSE</span><span class="kbd">ESC</span></div>
+            <div class="control-row"><span data-i18n="controls_move">MOVE</span><span class="kbd">WASD</span></div>
+            <div class="control-row"><span data-i18n="controls_attack">ATTACK</span><span class="kbd">LMB</span></div>
+            <div class="control-row"><span data-i18n="controls_chat">CHAT</span><span class="kbd">ENTER</span></div>
+            <div class="control-row"><span data-i18n="controls_close">CLOSE</span><span class="kbd">ESC</span></div>
         </div>
     </div>
     <div id="chat-wrap">
         <div class="chat-head">
             <div>
-                <div class="chat-kicker">WORLD CHAT</div>
-                <div class="chat-title">realtime.log</div>
+                <div class="chat-kicker" data-i18n="chat_kicker">WORLD CHAT</div>
+                <div class="chat-title" data-i18n="chat_title">realtime.log</div>
             </div>
             <div class="chat-hint">ENTER</div>
         </div>
         <div id="chat-log"></div>
-        <div id="chat-input-row"><input id="chat-input" type="text" placeholder="message" maxlength="80"
-                autocomplete="off" /><button id="chat-send" onclick="sendChat()">SEND</button></div>
+        <div id="chat-input-row"><input id="chat-input" type="text" placeholder="message" data-i18n-placeholder="ph_chat" maxlength="80"
+                autocomplete="off" /><button id="chat-send" onclick="sendChat()" data-i18n="btn_send">SEND</button></div>
     </div>
     <div id="levelup-flash"></div>
     <script>
         const UKEY = "sphere_users_v1",
+            LANG_KEY = "sphere_lang_v1",
             getDB = () => { try { return JSON.parse(localStorage.getItem(UKEY)) || {} } catch { return {} } },
             saveDB = db => localStorage.setItem(UKEY, JSON.stringify(db));
 
-        let authMode = "login";
+        const I18N = {
+            ko: {
+                auth_titlebar: "SPHERE.IO // 접속 노드",
+                auth_kicker: "월드 접속",
+                auth_pill: "터미널 UI",
+                auth_sub: "화면을 덜 가리는 간결한 오버레이와 명확한 정보 계층.",
+                btn_login: "로그인",
+                btn_register: "회원가입",
+                field_user: "아이디",
+                field_pass: "비밀번호",
+                field_confirm: "비밀번호 확인",
+                ph_user: "아이디",
+                ph_pass: "비밀번호",
+                ph_confirm: "비밀번호 확인",
+                auth_connect: "접속",
+                auth_create_account: "계정 생성",
+                hud_overline: "전술 피드",
+                hud_caption: "가볍고 또렷한 전투 정보를 한눈에 확인합니다.",
+                hud_player: "플레이어",
+                hud_player_sub: "현재 접속 캐릭터",
+                hud_level: "레벨",
+                hud_vital: "생명력",
+                hud_vital_sub: "피격과 회복 상태를 즉시 확인합니다.",
+                hud_world: "월드",
+                hud_coords: "좌표",
+                hud_online: "접속 수",
+                hud_stats: "능력치",
+                btn_disconnect: "연결 종료",
+                controls_kicker: "조작",
+                controls_title: "키맵",
+                controls_move: "이동",
+                controls_attack: "공격",
+                controls_chat: "채팅",
+                controls_close: "닫기",
+                chat_kicker: "월드 채팅",
+                chat_title: "실시간 로그",
+                ph_chat: "메시지",
+                btn_send: "전송",
+                auth_err_username: "ERR :: 아이디를 입력하세요",
+                auth_err_password: "ERR :: 비밀번호를 입력하세요",
+                auth_err_mismatch: "ERR :: 비밀번호가 일치하지 않습니다",
+                auth_err_minpw: "ERR :: 비밀번호는 4자 이상이어야 합니다",
+                auth_err_exists: "ERR :: \"{user}\" 계정이 이미 존재합니다",
+                auth_ok_welcome: "OK :: 환영합니다, {user}",
+                auth_err_notfound: "ERR :: 계정을 찾을 수 없습니다",
+                auth_err_wrongpass: "ERR :: 비밀번호가 올바르지 않습니다",
+                auth_ok_connecting: "OK :: {user}(으)로 접속 중",
+                auth_info_disconnected: "INFO :: 연결이 종료되었습니다",
+                sys_link_established: "연결 완료 :: 이동=WASD :: 공격=좌클릭 :: 채팅=ENTER",
+                sys_respawned: "노드 종료 :: 안전 지점에서 부활했습니다",
+                sys_target_down: "타겟 격파 :: +{xp} XP",
+                sys_no_points: "사용 가능한 스탯 포인트가 없습니다",
+                sys_stat_applied: "{stat} +1 적용",
+                sys_level_points: "레벨 업 :: +{points} 스탯 포인트 :: 총 {total}",
+                sys_level_broadcast: "레벨 {level}",
+                sys_session_replaced: "다른 접속으로 인해 현재 세션이 종료되었습니다",
+                flash_level_up: "레벨 {level} 상승",
+                stat_points: "{count} PT",
+            },
+            en: {
+                auth_titlebar: "SPHERE.IO // ACCESS NODE",
+                auth_kicker: "WORLD ACCESS",
+                auth_pill: "TERMINAL UI",
+                auth_sub: "Compact overlays with lighter visual weight and clearer hierarchy.",
+                btn_login: "LOGIN",
+                btn_register: "REGISTER",
+                field_user: "USER_ID",
+                field_pass: "PASSWORD",
+                field_confirm: "CONFIRM_PASSWORD",
+                ph_user: "username",
+                ph_pass: "password",
+                ph_confirm: "confirm password",
+                auth_connect: "CONNECT",
+                auth_create_account: "CREATE ACCOUNT",
+                hud_overline: "TACTICAL FEED",
+                hud_caption: "Compact readout with angular panels and reduced obstruction.",
+                hud_player: "PLAYER",
+                hud_player_sub: "connected pilot",
+                hud_level: "LEVEL",
+                hud_vital: "VITAL",
+                hud_vital_sub: "Keep damage and recovery feedback visible at a glance.",
+                hud_world: "WORLD",
+                hud_coords: "Coords",
+                hud_online: "Online",
+                hud_stats: "STATS",
+                btn_disconnect: "DISCONNECT",
+                controls_kicker: "CONTROLS",
+                controls_title: "KEYMAP",
+                controls_move: "MOVE",
+                controls_attack: "ATTACK",
+                controls_chat: "CHAT",
+                controls_close: "CLOSE",
+                chat_kicker: "WORLD CHAT",
+                chat_title: "realtime.log",
+                ph_chat: "message",
+                btn_send: "SEND",
+                auth_err_username: "ERR :: username required",
+                auth_err_password: "ERR :: password required",
+                auth_err_mismatch: "ERR :: passwords do not match",
+                auth_err_minpw: "ERR :: password min 4 chars",
+                auth_err_exists: "ERR :: \"{user}\" already exists",
+                auth_ok_welcome: "OK :: welcome, {user}",
+                auth_err_notfound: "ERR :: user not found",
+                auth_err_wrongpass: "ERR :: wrong password",
+                auth_ok_connecting: "OK :: connecting as {user}",
+                auth_info_disconnected: "INFO :: disconnected",
+                sys_link_established: "LINK ESTABLISHED :: MOVE=WASD :: ATTACK=LMB :: CHAT=ENTER",
+                sys_respawned: "NODE OFFLINE :: RESPAWNED AT SAFE POINT",
+                sys_target_down: "TARGET DOWN :: +{xp} XP",
+                sys_no_points: "NO STAT POINTS AVAILABLE",
+                sys_stat_applied: "{stat} +1 APPLIED",
+                sys_level_points: "LEVEL UP :: +{points} STAT PTS :: TOTAL {total}",
+                sys_level_broadcast: "LEVEL {level}",
+                sys_session_replaced: "This session was replaced by another login",
+                flash_level_up: "LEVEL {level} UP",
+                stat_points: "{count} PT",
+            }
+        };
+
+        let authMode = "login",
+            currentLang = localStorage.getItem(LANG_KEY) === "en" ? "en" : "ko";
+
+        const t = (key, vars = {}) => {
+            const source = (I18N[currentLang] && I18N[currentLang][key]) || I18N.en[key] || key;
+            return source.replace(/\{(\w+)\}/g, (_, name) => vars[name] ?? "");
+        };
 
         const elMsg = document.getElementById("auth-msg"),
             elUser = document.getElementById("h-user"),
@@ -871,19 +1023,45 @@
             elStr = document.getElementById("h-str"),
             elAgi = document.getElementById("h-agi"),
             elVit = document.getElementById("h-vit"),
+            elDex = document.getElementById("h-dex"),
+            elWis = document.getElementById("h-wis"),
+            elLuk = document.getElementById("h-luk"),
             btnStr = document.getElementById("btn-str"),
             btnAgi = document.getElementById("btn-agi"),
             btnVit = document.getElementById("btn-vit"),
+            btnDex = document.getElementById("btn-dex"),
+            btnWis = document.getElementById("btn-wis"),
+            btnLuk = document.getElementById("btn-luk"),
+            langBtn = document.getElementById("lang-btn"),
             chatLog = document.getElementById("chat-log"),
             chatInput = document.getElementById("chat-input"),
             controlsCard = document.getElementById("controls-card"),
             levelupFlash = document.getElementById("levelup-flash");
 
+        function renderStaticI18n() {
+            document.documentElement.lang = currentLang;
+            document.querySelectorAll("[data-i18n]").forEach(node => {
+                node.textContent = t(node.dataset.i18n);
+            });
+            document.querySelectorAll("[data-i18n-placeholder]").forEach(node => {
+                node.placeholder = t(node.dataset.i18nPlaceholder);
+            });
+            document.getElementById("sbtn-lbl").textContent = authMode === "signup" ? t("auth_create_account") : t("auth_connect");
+            elStatPts.textContent = t("stat_points", { count: Number.parseInt(elStatPts.textContent, 10) || 0 });
+            langBtn.textContent = currentLang === "ko" ? "EN" : "KO";
+        }
+
+        function toggleLanguage() {
+            currentLang = currentLang === "ko" ? "en" : "ko";
+            localStorage.setItem(LANG_KEY, currentLang);
+            renderStaticI18n();
+        }
+
         function setMode(mode) {
             authMode = mode;
             const signup = mode === "signup";
             document.getElementById("cfm-row").style.display = signup ? "" : "none";
-            document.getElementById("sbtn-lbl").textContent = signup ? "CREATE ACCOUNT" : "CONNECT";
+            document.getElementById("sbtn-lbl").textContent = signup ? t("auth_create_account") : t("auth_connect");
             document.getElementById("btn-ln").className = "mbtn" + (signup ? "" : " on");
             document.getElementById("btn-su").className = "mbtn" + (signup ? " on" : "");
             setMsg("", "");
@@ -898,23 +1076,25 @@
             const user = document.getElementById("i-user").value.trim(),
                 pass = document.getElementById("i-pass").value,
                 confirm = document.getElementById("i-cfm").value;
-            if (!user) return setMsg("ERR :: username required", "err");
-            if (!pass) return setMsg("ERR :: password required", "err");
+            if (!user) return setMsg(t("auth_err_username"), "err");
+            if (!pass) return setMsg(t("auth_err_password"), "err");
             const db = getDB();
             if (authMode === "signup") {
-                if (pass !== confirm) return setMsg("ERR :: passwords do not match", "err");
-                if (pass.length < 4) return setMsg("ERR :: password min 4 chars", "err");
-                if (db[user]) return setMsg(`ERR :: "${user}" already exists`, "err");
+                if (pass !== confirm) return setMsg(t("auth_err_mismatch"), "err");
+                if (pass.length < 4) return setMsg(t("auth_err_minpw"), "err");
+                if (db[user]) return setMsg(t("auth_err_exists", { user }), "err");
                 db[user] = { pw: pass, ts: Date.now() };
                 saveDB(db);
-                setMsg(`OK :: welcome, ${user}`, "ok");
+                setMsg(t("auth_ok_welcome", { user }), "ok");
                 return setTimeout(() => startGame(user), 600);
             }
-            if (!db[user]) return setMsg("ERR :: user not found", "err");
-            if (db[user].pw !== pass) return setMsg("ERR :: wrong password", "err");
-            setMsg(`OK :: connecting as ${user}`, "ok");
+            if (!db[user]) return setMsg(t("auth_err_notfound"), "err");
+            if (db[user].pw !== pass) return setMsg(t("auth_err_wrongpass"), "err");
+            setMsg(t("auth_ok_connecting", { user }), "ok");
             setTimeout(() => startGame(user), 400);
         }
+
+        renderStaticI18n();
 
         const authFieldIds = ["i-user", "i-pass", "i-cfm"];
 
@@ -1056,25 +1236,31 @@
             btnStr.disabled = disabled;
             btnAgi.disabled = disabled;
             btnVit.disabled = disabled;
+            btnDex.disabled = disabled;
+            btnWis.disabled = disabled;
+            btnLuk.disabled = disabled;
         }
 
         function allocateStat(stat) {
             if (!socket) return;
             socket.emit("allocateStat", { stat }, res => {
                 if (!res?.ok) {
-                    if (res?.error === "no_points") addChatLine("<span class=\"ct\">NO STAT POINTS AVAILABLE</span>", "sys");
+                    if (res?.error === "no_points") addChatLine(`<span class="ct">${escHtml(t("sys_no_points"))}</span>`, "sys");
                     return;
                 }
-                elStatPts.textContent = `${res.statPoints} PT`;
+                elStatPts.textContent = t("stat_points", { count: res.statPoints });
                 elStr.textContent = res.stats?.str ?? elStr.textContent;
                 elAgi.textContent = res.stats?.agi ?? elAgi.textContent;
                 elVit.textContent = res.stats?.vit ?? elVit.textContent;
+                elDex.textContent = res.stats?.dex ?? elDex.textContent;
+                elWis.textContent = res.stats?.wis ?? elWis.textContent;
+                elLuk.textContent = res.stats?.luk ?? elLuk.textContent;
                 elHp.textContent = res.hp ?? elHp.textContent;
                 if (typeof res.hp === "number" && typeof res.maxHp === "number") {
                     elHpFill.style.width = `${(res.hp / res.maxHp * 100).toFixed(1)}%`;
                 }
                 updateStatControls(res.statPoints);
-                addChatLine(`<span class="ct">${escHtml(stat.toUpperCase())} +1 APPLIED</span>`, "sys");
+                addChatLine(`<span class="ct">${escHtml(t("sys_stat_applied", { stat: stat.toUpperCase() }))}</span>`, "sys");
             });
         }
 
@@ -1170,7 +1356,7 @@
         let flashTimer = null;
 
         function showLevelUpFlash(level) {
-            levelupFlash.textContent = `LEVEL ${level} UP`;
+            levelupFlash.textContent = t("flash_level_up", { level });
             levelupFlash.classList.add("show");
             if (flashTimer) clearTimeout(flashTimer);
             flashTimer = setTimeout(() => levelupFlash.classList.remove("show"), 2200);
@@ -1191,7 +1377,10 @@
                 myId = d.id;
                 worldW = d.worldW;
                 worldH = d.worldH;
-                addChatLine("<span class=\"ct\">LINK ESTABLISHED :: MOVE=WASD :: ATTACK=LMB :: CHAT=ENTER</span>", "sys");
+                addChatLine(`<span class="ct">${escHtml(t("sys_link_established"))}</span>`, "sys");
+            });
+            socket.on("sessionReplaced", () => {
+                doLogout(t("sys_session_replaced"), "err");
             });
             socket.on("state", d => {
                 playerMap = {};
@@ -1211,10 +1400,13 @@
                 elXpFill.style.width = `${(me.xp / me.xpMax * 100).toFixed(1)}%`;
                 elHp.textContent = me.hp;
                 elHpFill.style.width = `${(me.hp / me.maxHp * 100).toFixed(1)}%`;
-                elStatPts.textContent = `${me.statPoints || 0} PT`;
+                elStatPts.textContent = t("stat_points", { count: me.statPoints || 0 });
                 elStr.textContent = me.stats?.str ?? 0;
                 elAgi.textContent = me.stats?.agi ?? 0;
                 elVit.textContent = me.stats?.vit ?? 0;
+                elDex.textContent = me.stats?.dex ?? 0;
+                elWis.textContent = me.stats?.wis ?? 0;
+                elLuk.textContent = me.stats?.luk ?? 0;
                 updateStatControls(me.statPoints || 0);
             });
             socket.on("damaged", ({ dmg }) => {
@@ -1223,22 +1415,22 @@
                 const me = playerMap[myId];
                 if (me) spawnDmgNum(me.x, me.y - me.r - 10, `-${dmg}`, "#dc2626");
             });
-            socket.on("died", () => addChatLine("<span class=\"ct\">NODE OFFLINE :: RESPAWNED AT SAFE POINT</span>", "sys"));
-            socket.on("attackResult", ({ monsterId, dmg }) => {
+            socket.on("died", () => addChatLine(`<span class="ct">${escHtml(t("sys_respawned"))}</span>`, "sys"));
+            socket.on("attackResult", ({ monsterId, dmg, crit }) => {
                 const m = monsterMap[monsterId];
-                if (m) spawnDmgNum(m.x, m.y - m.r - 8, String(dmg), "#2563eb");
+                if (m) spawnDmgNum(m.x, m.y - m.r - 8, crit ? `CRIT ${dmg}` : String(dmg), crit ? "#f59e0b" : "#2563eb");
             });
             socket.on("monsterDied", ({ monsterId, killerId, xp }) => {
                 delete monsterMap[monsterId];
                 delete renderMonsters[monsterId];
-                if (killerId === myId) addChatLine(`<span class="ct">TARGET DOWN :: +${xp} XP</span>`, "sys");
+                if (killerId === myId) addChatLine(`<span class="ct">${escHtml(t("sys_target_down", { xp }))}</span>`, "sys");
             });
             socket.on("levelUp", ({ id, level, name, gained, statPoints }) => {
                 if (id === myId) {
                     showLevelUpFlash(level);
-                    addChatLine(`<span class="ct">LEVEL UP :: +${gained * 3} STAT PTS :: TOTAL ${statPoints}</span>`, "lvlup");
+                    addChatLine(`<span class="ct">${escHtml(t("sys_level_points", { points: gained * 3, total: statPoints }))}</span>`, "lvlup");
                 }
-                addChatLine(`<span class="ct"><b>${escHtml(name)}</b> :: LEVEL <b>${level}</b></span>`, "lvlup");
+                addChatLine(`<span class="ct"><b>${escHtml(name)}</b> :: ${escHtml(t("sys_level_broadcast", { name: "", level }))}</span>`, "lvlup");
             });
             socket.on("chat", ({ id, name, text }) => {
                 bubbles[id] = { text, expiry: Date.now() + 3000 };
@@ -1249,7 +1441,7 @@
             rafId = requestAnimationFrame(loop);
         }
 
-        function doLogout() {
+        function doLogout(infoText = t("auth_info_disconnected"), infoClass = "info") {
             gameRunning = false;
             if (rafId) {
                 cancelAnimationFrame(rafId);
@@ -1278,14 +1470,17 @@
             chatLog.innerHTML = "";
             levelupFlash.classList.remove("show");
             elHpFill.style.background = "linear-gradient(90deg,rgba(248,113,113,.4),#dc2626)";
-            elStatPts.textContent = "0 PT";
+            elStatPts.textContent = t("stat_points", { count: 0 });
             elStr.textContent = "0";
             elAgi.textContent = "0";
             elVit.textContent = "0";
+            elDex.textContent = "0";
+            elWis.textContent = "0";
+            elLuk.textContent = "0";
             updateStatControls(0);
             camX = camY = 0;
             lastPosStr = "";
-            setMsg("INFO :: disconnected", "info");
+            setMsg(infoText, infoClass);
         }
 
         let camX = 0,

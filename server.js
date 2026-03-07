@@ -1,6 +1,7 @@
 const express = require('express');
 const http    = require('http');
 const { Server } = require('socket.io');
+const fs      = require('fs');
 const path    = require('path');
 
 const app    = express();
@@ -26,6 +27,8 @@ const ORB_RADIUS   = 7;
 const ORB_SPAWN_MS = 1200;
 
 const MAX_MONSTERS = 40;
+const SAVE_DIR = path.join(__dirname, 'data');
+const SAVE_FILE = path.join(SAVE_DIR, 'profiles.json');
 const MONSTER_TYPES = [
   { type:'dot',      hp:20,  speed:1.2, r:6,  xp:8,  color:'#ef4444', dmg:5,  atkR:22, atkCD:1500 },
   { type:'line',     hp:40,  speed:0.9, r:14, xp:18, color:'#8b5cf6', dmg:10, atkR:28, atkCD:2000 },
@@ -34,6 +37,30 @@ const MONSTER_TYPES = [
 ];
 let monsterIdCounter = 0;
 let orbIdCounter     = 0;
+const DEFAULT_STATS = Object.freeze({ str: 0, agi: 0, vit: 0, dex: 0, wis: 0, luk: 0 });
+
+if (!fs.existsSync(SAVE_DIR)) fs.mkdirSync(SAVE_DIR, { recursive: true });
+if (!fs.existsSync(SAVE_FILE)) fs.writeFileSync(SAVE_FILE, '{}', 'utf8');
+
+function loadProfiles() {
+  try {
+    return JSON.parse(fs.readFileSync(SAVE_FILE, 'utf8')) || {};
+  } catch {
+    return {};
+  }
+}
+
+let savedProfiles = loadProfiles();
+let saveTimer = null;
+
+function scheduleSaveProfiles() {
+  if (saveTimer) return;
+  saveTimer = setTimeout(() => {
+    saveTimer = null;
+    fs.writeFile(SAVE_FILE, JSON.stringify(savedProfiles, null, 2), () => {});
+  }, 200);
+  if (typeof saveTimer.unref === 'function') saveTimer.unref();
+}
 
 // ══════════════════════════════════════
 //  HELPERS
@@ -58,9 +85,64 @@ function radiusForLevel(level) { return BASE_RADIUS + Math.floor((level - 1) * 1
 function speedForPlayer(p) { return BASE_PLAYER_SPEED + p.stats.agi * 0.22; }
 function damageForPlayer(p) { return 10 + (p.level - 1) * 3 + p.stats.str * 2; }
 function attackRangeForPlayer(p) { return radiusForLevel(p.level) + 26 + p.stats.str * 1.5; }
+function critChanceForPlayer(p) { return Math.min(0.35, p.stats.luk * 0.02); }
+function critMultiplierForPlayer(p) { return 1.7 + p.stats.luk * 0.03; }
+function orbBonusForPlayer(p) { return 1 + p.stats.wis * 0.04; }
+function normalizeStats(raw = {}) {
+  return {
+    str: clamp(Number(raw.str) || 0, 0, 999),
+    agi: clamp(Number(raw.agi) || 0, 0, 999),
+    vit: clamp(Number(raw.vit) || 0, 0, 999),
+    dex: clamp(Number(raw.dex) || 0, 0, 999),
+    wis: clamp(Number(raw.wis) || 0, 0, 999),
+    luk: clamp(Number(raw.luk) || 0, 0, 999),
+  };
+}
 function recalcDerivedStats(p) {
   p.maxHp = 100 + p.stats.vit * 20;
   p.hp = clamp(p.hp, 0, p.maxHp);
+}
+function serializePlayerProfile(p) {
+  return {
+    name: p.name,
+    x: Math.round(p.x),
+    y: Math.round(p.y),
+    level: p.level,
+    xp: p.xp,
+    hp: p.hp,
+    statPoints: p.statPoints,
+    stats: p.stats,
+  };
+}
+function persistPlayerProfile(p) {
+  savedProfiles[p.name] = serializePlayerProfile(p);
+  scheduleSaveProfiles();
+}
+function makePlayerState(socketId, name, saved = {}) {
+  const stats = normalizeStats(saved.stats || DEFAULT_STATS);
+  const level = clamp(Number(saved.level) || 1, 1, MAX_LEVEL);
+  const r = radiusForLevel(level);
+  const defaultPos = randomPos(BASE_RADIUS);
+  const pos = {
+    x: clamp(Number.isFinite(Number(saved.x)) ? Number(saved.x) : defaultPos.x, r, WORLD_W - r),
+    y: clamp(Number.isFinite(Number(saved.y)) ? Number(saved.y) : defaultPos.y, r, WORLD_H - r),
+  };
+  const p = {
+    id: socketId,
+    name,
+    x: pos.x,
+    y: pos.y,
+    level,
+    xp: clamp(Number(saved.xp) || 0, 0, level >= MAX_LEVEL ? 0 : xpToNextLevel(level)),
+    hp: 100,
+    maxHp: 100,
+    statPoints: clamp(Number(saved.statPoints) || 0, 0, 9999),
+    stats,
+    keys: { up:false, down:false, left:false, right:false },
+  };
+  recalcDerivedStats(p);
+  p.hp = clamp(Number(saved.hp) || p.maxHp, 1, p.maxHp);
+  return p;
 }
 
 function applyLevelUp(p) {
@@ -81,6 +163,15 @@ function applyLevelUp(p) {
 const players  = {};
 const orbs     = {};
 const monsters = {};
+const activePlayersByName = {};
+
+function removePlayer(socketId, { save = true } = {}) {
+  const p = players[socketId];
+  if (!p) return;
+  if (save) persistPlayerProfile(p);
+  if (activePlayersByName[p.name] === socketId) delete activePlayersByName[p.name];
+  delete players[socketId];
+}
 
 function spawnOrb() {
   if (Object.keys(orbs).length >= MAX_ORBS) return;
@@ -138,13 +229,17 @@ setInterval(() => {
     }
     for (const oid of toDelete) {
       if (!orbs[oid]) continue;  // already picked by someone else this tick
-      p.xp += orbs[oid].value;
-      p.hp = clamp(p.hp + orbs[oid].value, 0, p.maxHp);
+      const bonus = orbBonusForPlayer(p);
+      p.xp += Math.round(orbs[oid].value * bonus);
+      p.hp = clamp(p.hp + Math.ceil(orbs[oid].value * (0.8 + p.stats.wis * 0.1)), 0, p.maxHp);
       delete orbs[oid];
     }
     if (toDelete.length > 0) {
       const gained = applyLevelUp(p);
       if (gained > 0) io.emit('levelUp', { id: p.id, level: p.level, name: p.name, gained, statPoints: p.statPoints });
+      persistPlayerProfile(p);
+    } else if (dx !== 0 || dy !== 0) {
+      persistPlayerProfile(p);
     }
   }
 
@@ -181,6 +276,7 @@ setInterval(() => {
             nearest.x  = pos.x;
             nearest.y  = pos.y;
             nearest.xp = Math.floor(nearest.xp * 0.9);
+            persistPlayerProfile(nearest);
             io.to(nearest.id).emit('died');
           }
         }
@@ -232,18 +328,18 @@ io.on('connection', (socket) => {
   socket.on('join', ({ name }) => {
     if (players[socket.id]) return;
     const trimmed = (name || 'Player').trim().slice(0, 16) || 'Player';
-    const pos = randomPos(BASE_RADIUS);
-    players[socket.id] = {
-      id: socket.id, name: trimmed,
-      x: pos.x, y: pos.y,
-      level: 1, xp: 0,
-      hp: 100, maxHp: 100,
-      statPoints: 0,
-      stats: { str: 0, agi: 0, vit: 0 },
-      keys: { up:false, down:false, left:false, right:false },
-    };
-    recalcDerivedStats(players[socket.id]);
-    players[socket.id].hp = players[socket.id].maxHp;
+    const activeId = activePlayersByName[trimmed];
+    if (activeId && activeId !== socket.id) {
+      const oldSocket = io.sockets.sockets.get(activeId);
+      if (oldSocket) {
+        oldSocket.emit('sessionReplaced');
+        oldSocket.disconnect(true);
+      }
+      removePlayer(activeId, { save: true });
+    }
+    players[socket.id] = makePlayerState(socket.id, trimmed, savedProfiles[trimmed]);
+    activePlayersByName[trimmed] = socket.id;
+    persistPlayerProfile(players[socket.id]);
     socket.emit('welcome', { id: socket.id, worldW: WORLD_W, worldH: WORLD_H });
   });
 
@@ -260,13 +356,15 @@ io.on('connection', (socket) => {
     const m = monsters[monsterId];
     if (!p || !m) return;
     if (dist(p, m) > attackRangeForPlayer(p) + m.r) return;
-    const dmg = damageForPlayer(p);
+    const isCrit = Math.random() < critChanceForPlayer(p);
+    const dmg = Math.round(damageForPlayer(p) * (isCrit ? critMultiplierForPlayer(p) : 1));
     m.hp -= dmg;
-    socket.emit('attackResult', { monsterId, dmg, hp: m.hp });
+    socket.emit('attackResult', { monsterId, dmg, hp: m.hp, crit: isCrit });
     if (m.hp <= 0) {
-      p.xp += m.xp;
+      p.xp += Math.round(m.xp * orbBonusForPlayer(p));
       const gained = applyLevelUp(p);
       if (gained > 0) io.emit('levelUp', { id: p.id, level: p.level, name: p.name, gained, statPoints: p.statPoints });
+      persistPlayerProfile(p);
       io.emit('monsterDied', { monsterId, killerId: p.id, xp: m.xp });
       delete monsters[monsterId];
     }
@@ -275,13 +373,14 @@ io.on('connection', (socket) => {
   socket.on('allocateStat', ({ stat }, ack) => {
     const p = players[socket.id];
     if (!p) return ack && ack({ ok: false, error: 'not_joined' });
-    if (!['str', 'agi', 'vit'].includes(stat)) return ack && ack({ ok: false, error: 'bad_stat' });
+    if (!['str', 'agi', 'vit', 'dex', 'wis', 'luk'].includes(stat)) return ack && ack({ ok: false, error: 'bad_stat' });
     if (p.statPoints <= 0) return ack && ack({ ok: false, error: 'no_points' });
     const prevMaxHp = p.maxHp;
     p.statPoints -= 1;
     p.stats[stat] += 1;
     recalcDerivedStats(p);
     if (stat === 'vit') p.hp = clamp(p.hp + (p.maxHp - prevMaxHp), 0, p.maxHp);
+    persistPlayerProfile(p);
     if (ack) ack({ ok: true, statPoints: p.statPoints, stats: p.stats, hp: p.hp, maxHp: p.maxHp });
   });
 
@@ -295,7 +394,7 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     console.log('[-]', socket.id);
-    delete players[socket.id];
+    removePlayer(socket.id, { save: true });
   });
 });
 
