@@ -877,13 +877,24 @@ io.on('connection', socket => {
 
   socket.on('selectClass', ({ classKey }, ack) => {
     const p = players[socket.id];
+    console.log('[class/select]', { socketId: socket.id, requested: classKey, level: p?.level, currentClassKey: p?.classKey || null });
     if (!p) return ack && ack({ ok: false, error: 'not_joined' });
-    if (p.level < CLASS_UNLOCK_LEVEL) return ack && ack({ ok: false, error: 'class_locked', unlockLevel: CLASS_UNLOCK_LEVEL });
-    if (p.classKey) return ack && ack({ ok: false, error: 'class_taken', classKey: p.classKey });
+    if (p.level < CLASS_UNLOCK_LEVEL) {
+      console.log('[class/select] reject', { socketId: socket.id, reason: 'class_locked', level: p.level });
+      return ack && ack({ ok: false, error: 'class_locked', unlockLevel: CLASS_UNLOCK_LEVEL });
+    }
+    if (p.classKey) {
+      console.log('[class/select] reject', { socketId: socket.id, reason: 'class_taken', classKey: p.classKey });
+      return ack && ack({ ok: false, error: 'class_taken', classKey: p.classKey });
+    }
     const nextClassKey = normalizeClassKey(classKey);
-    if (!nextClassKey) return ack && ack({ ok: false, error: 'bad_class' });
+    if (!nextClassKey) {
+      console.log('[class/select] reject', { socketId: socket.id, reason: 'bad_class', requested: classKey });
+      return ack && ack({ ok: false, error: 'bad_class' });
+    }
 
     p.classKey = nextClassKey;
+    console.log('[class/select] success', { socketId: socket.id, classKey: p.classKey });
     emitSelfState(socket.id, p);
     persistPlayerProfile(p);
 

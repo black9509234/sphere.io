@@ -681,6 +681,8 @@
             border: 1px solid rgba(17, 17, 17, .1);
             border-radius: 3px;
             background: rgba(255, 255, 255, .82);
+            appearance: none;
+            outline: none;
             text-align: left;
             transition: border-color .16s, transform .16s, box-shadow .16s;
         }
@@ -689,6 +691,11 @@
             border-color: rgba(17, 17, 17, .2);
             transform: translateY(-1px);
             box-shadow: 0 12px 24px rgba(18, 18, 18, .08);
+        }
+
+        .class-card:focus-visible:not(:disabled) {
+            border-color: rgba(37, 99, 235, .34);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, .14), 0 12px 24px rgba(18, 18, 18, .08);
         }
 
         .class-card:disabled {
@@ -1916,6 +1923,8 @@
                 classSub.textContent = t("class_screen_sub_locked", { level: CLASS_UNLOCK_LEVEL });
             } else if (selectedClass) {
                 classSub.textContent = t("class_screen_sub_chosen", { name: className(selectedClass) });
+            } else if (lastClassAttemptError) {
+                classSub.textContent = lastClassAttemptError;
             } else {
                 classSub.textContent = t("class_screen_sub_ready", { level: CLASS_UNLOCK_LEVEL });
             }
@@ -1942,12 +1951,17 @@
         }
 
         function selectClass(classKey) {
-            if (!socket || classSelectionPending || currentClassKey()) return;
+            const blockedReason = !socket ? "no_socket" : classSelectionPending ? "pending" : currentClassKey() ? "already_selected" : "";
+            console.log("[class/select] click", { classKey, blockedReason, classSelectionPending, currentClassKey: currentClassKey(), currentSelf, me: playerMap[myId] || null });
+            if (blockedReason) return;
+            lastClassAttemptError = "";
             classSelectionPending = true;
             renderClassOptions();
             socket.emit("selectClass", { classKey }, res => {
                 classSelectionPending = false;
+                console.log("[class/select] ack", res);
                 if (!res?.ok) {
+                    lastClassAttemptError = classErrorMessage(res?.error, { level: res?.unlockLevel || CLASS_UNLOCK_LEVEL });
                     if (res?.error === "class_taken" && res.classKey) {
                         currentSelf = {
                             ...(currentSelf || {}),
@@ -1957,10 +1971,11 @@
                         if (playerMap[myId]) playerMap[myId].classKey = res.classKey;
                         if (renderPlayers[myId]) renderPlayers[myId].classKey = res.classKey;
                     }
-                    addChatLine(`<span class="ct">${escHtml(classErrorMessage(res?.error, { level: res?.unlockLevel || CLASS_UNLOCK_LEVEL }))}</span>`, "sys");
+                    addChatLine(`<span class="ct">${escHtml(lastClassAttemptError)}</span>`, "sys");
                     syncClassUi();
                     return;
                 }
+                lastClassAttemptError = "";
                 if (playerMap[myId]) playerMap[myId].classKey = res.classKey;
                 if (renderPlayers[myId]) renderPlayers[myId].classKey = res.classKey;
                 applySelfState(res.self || currentSelf);
@@ -2099,6 +2114,7 @@
             gameRunning = false,
             inventoryOpen = false,
             classScreenOpen = false,
+            lastClassAttemptError = "",
             classPrompted = false,
             classSelectionPending = false,
             devCheatProgress = 0,
