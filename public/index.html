@@ -81,6 +81,7 @@
             display: block;
             width: 100vw;
             height: 100vh;
+            cursor: crosshair;
         }
 
         #auth-screen {
@@ -368,6 +369,11 @@
             background: var(--panel2);
         }
 
+        .hud-chip.interactive,
+        .hud-chip.interactive * {
+            pointer-events: auto;
+        }
+
         .hi-line {
             display: flex;
             align-items: center;
@@ -389,6 +395,51 @@
             display: flex;
             flex-direction: column;
             gap: 7px;
+        }
+
+        .stat-points {
+            color: var(--accent);
+            font-weight: 700;
+        }
+
+        .stat-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .stat-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto auto;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+        }
+
+        .stat-name {
+            color: var(--text);
+            font-weight: 700;
+        }
+
+        .stat-meta {
+            color: var(--muted);
+            font-size: 11px;
+        }
+
+        .stat-add {
+            min-width: 24px;
+            height: 24px;
+            border: 1px solid rgba(17, 17, 17, .12);
+            border-radius: 2px;
+            background: rgba(37, 99, 235, .08);
+            color: var(--accent);
+            font: 700 14px var(--mono);
+            line-height: 1;
+        }
+
+        .stat-add:disabled {
+            opacity: .45;
+            cursor: default;
         }
 
         .track {
@@ -764,8 +815,16 @@
             <div class="hud-chip">
                 <div class="hi-label">WORLD</div>
                 <div class="hi-line"><span class="hi-sub">Coords</span><span class="hi-value"
-                        id="h-pos">(0,0)</span></div>
+                        id="h-pos">X:0 Y:0</span></div>
                 <div class="hi-line"><span class="hi-sub">Online</span><span class="hi-value" id="h-cnt">0</span></div>
+            </div>
+            <div class="hud-chip interactive">
+                <div class="hi-line"><span class="hi-label">STATS</span><span class="stat-points" id="h-statpts">0 PT</span></div>
+                <div class="stat-list">
+                    <div class="stat-row"><span class="stat-name">STR</span><span class="stat-meta" id="h-str">0</span><button class="stat-add" id="btn-str" onclick="allocateStat('str')" disabled>+</button></div>
+                    <div class="stat-row"><span class="stat-name">AGI</span><span class="stat-meta" id="h-agi">0</span><button class="stat-add" id="btn-agi" onclick="allocateStat('agi')" disabled>+</button></div>
+                    <div class="stat-row"><span class="stat-name">VIT</span><span class="stat-meta" id="h-vit">0</span><button class="stat-add" id="btn-vit" onclick="allocateStat('vit')" disabled>+</button></div>
+                </div>
             </div>
         </div>
     </div>
@@ -775,7 +834,7 @@
         <div class="control-title">KEYMAP</div>
         <div class="control-list">
             <div class="control-row"><span>MOVE</span><span class="kbd">WASD</span></div>
-            <div class="control-row"><span>ATTACK</span><span class="kbd">Z</span></div>
+            <div class="control-row"><span>ATTACK</span><span class="kbd">LMB</span></div>
             <div class="control-row"><span>CHAT</span><span class="kbd">ENTER</span></div>
             <div class="control-row"><span>CLOSE</span><span class="kbd">ESC</span></div>
         </div>
@@ -810,6 +869,13 @@
             elXpFill = document.getElementById("xp-fill"),
             elHp = document.getElementById("h-hp"),
             elHpFill = document.getElementById("hp-fill"),
+            elStatPts = document.getElementById("h-statpts"),
+            elStr = document.getElementById("h-str"),
+            elAgi = document.getElementById("h-agi"),
+            elVit = document.getElementById("h-vit"),
+            btnStr = document.getElementById("btn-str"),
+            btnAgi = document.getElementById("btn-agi"),
+            btnVit = document.getElementById("btn-vit"),
             chatLog = document.getElementById("chat-log"),
             chatInput = document.getElementById("chat-input"),
             controlsCard = document.getElementById("controls-card"),
@@ -889,6 +955,8 @@
         const TILE = 60,
             keys = { up: false, down: false, left: false, right: false };
         let lastKeys = {},
+            keySeq = 0,
+            keyOrder = { up: 0, down: 0, left: 0, right: 0 },
             gameRunning = false,
             rafId = null,
             attackCooldown = false;
@@ -900,7 +968,6 @@
                 return;
             }
             if (chatFocused()) return;
-            if ((e.key === "z" || e.key === "Z") && gameRunning) return tryAttack();
             applyKey(e, true);
             sendKeys();
         });
@@ -916,34 +983,59 @@
             sendKeys();
         });
 
+        canvas.addEventListener("mousedown", e => {
+            if (e.button !== 0 || !gameRunning || chatFocused()) return;
+            tryAttackAt(e.clientX, e.clientY);
+        });
+
         const chatFocused = () => document.activeElement === chatInput;
 
         function applyKey(e, v) {
-            if (e.key === "ArrowUp" || e.key === "w" || e.key === "W") keys.up = v;
-            if (e.key === "ArrowDown" || e.key === "s" || e.key === "S") keys.down = v;
-            if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A") keys.left = v;
-            if (e.key === "ArrowRight" || e.key === "d" || e.key === "D") keys.right = v;
+            let dir = "";
+            if (e.key === "ArrowUp" || e.key === "w" || e.key === "W") dir = "up";
+            if (e.key === "ArrowDown" || e.key === "s" || e.key === "S") dir = "down";
+            if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A") dir = "left";
+            if (e.key === "ArrowRight" || e.key === "d" || e.key === "D") dir = "right";
+            if (!dir) return;
+            keys[dir] = v;
+            if (v) keyOrder[dir] = ++keySeq;
+        }
+
+        function currentMoveAxis() {
+            const horizontal = Math.max(keys.left ? keyOrder.left : -1, keys.right ? keyOrder.right : -1);
+            const vertical = Math.max(keys.up ? keyOrder.up : -1, keys.down ? keyOrder.down : -1);
+            if (horizontal < 0 && vertical < 0) return "x";
+            return horizontal >= vertical ? "x" : "y";
         }
 
         function sendKeys() {
             if (!socket) return;
-            const changed = keys.up !== lastKeys.up || keys.down !== lastKeys.down || keys.left !== lastKeys.left || keys.right !== lastKeys.right;
+            const axis = currentMoveAxis();
+            const changed = keys.up !== lastKeys.up || keys.down !== lastKeys.down || keys.left !== lastKeys.left || keys.right !== lastKeys.right || axis !== lastKeys.axis;
             if (changed) {
-                socket.emit("keys", { ...keys });
-                lastKeys = { ...keys };
+                socket.emit("keys", { ...keys, axis });
+                lastKeys = { ...keys, axis };
             }
         }
 
-        function tryAttack() {
+        function tryAttackAt(clientX, clientY) {
             if (attackCooldown || !socket) return;
             const me = playerMap[myId];
             if (!me) return;
+            const rect = canvas.getBoundingClientRect(),
+                mx = clientX - rect.left,
+                my = clientY - rect.top;
             let nearest = null,
-                nearDist = Infinity;
-            for (const monster of Object.values(monsterMap)) {
-                const d = Math.hypot(me.x - monster.x, me.y - monster.y);
-                if (d < nearDist) {
-                    nearDist = d;
+                nearScore = Infinity;
+            for (const monster of Object.values(renderMonsters)) {
+                const worldDist = Math.hypot(me.x - monster.x, me.y - monster.y);
+                if (worldDist > me.r + monster.r + 10) continue;
+                const sx = monster.x - camX,
+                    sy = monster.y - camY,
+                    cursorDist = Math.hypot(mx - sx, my - sy),
+                    score = cursorDist <= monster.r + 14 ? cursorDist : cursorDist + 120;
+                if (score < nearScore) {
+                    nearScore = score;
                     nearest = monster;
                 }
             }
@@ -951,6 +1043,33 @@
             socket.emit("attack", { monsterId: nearest.id });
             attackCooldown = true;
             setTimeout(() => attackCooldown = false, 400);
+        }
+
+        function updateStatControls(points) {
+            const disabled = !gameRunning || points <= 0;
+            btnStr.disabled = disabled;
+            btnAgi.disabled = disabled;
+            btnVit.disabled = disabled;
+        }
+
+        function allocateStat(stat) {
+            if (!socket) return;
+            socket.emit("allocateStat", { stat }, res => {
+                if (!res?.ok) {
+                    if (res?.error === "no_points") addChatLine("<span class=\"ct\">NO STAT POINTS AVAILABLE</span>", "sys");
+                    return;
+                }
+                elStatPts.textContent = `${res.statPoints} PT`;
+                elStr.textContent = res.stats?.str ?? elStr.textContent;
+                elAgi.textContent = res.stats?.agi ?? elAgi.textContent;
+                elVit.textContent = res.stats?.vit ?? elVit.textContent;
+                elHp.textContent = res.hp ?? elHp.textContent;
+                if (typeof res.hp === "number" && typeof res.maxHp === "number") {
+                    elHpFill.style.width = `${(res.hp / res.maxHp * 100).toFixed(1)}%`;
+                }
+                updateStatControls(res.statPoints);
+                addChatLine(`<span class="ct">${escHtml(stat.toUpperCase())} +1 APPLIED</span>`, "sys");
+            });
         }
 
         function syncRenderEntities(nextMap, renderMap, snapDistance = 220) {
@@ -1066,7 +1185,7 @@
                 myId = d.id;
                 worldW = d.worldW;
                 worldH = d.worldH;
-                addChatLine("<span class=\"ct\">LINK ESTABLISHED :: MOVE=WASD :: ATTACK=Z :: CHAT=ENTER</span>", "sys");
+                addChatLine("<span class=\"ct\">LINK ESTABLISHED :: MOVE=WASD :: ATTACK=LMB :: CHAT=ENTER</span>", "sys");
             });
             socket.on("state", d => {
                 playerMap = {};
@@ -1086,6 +1205,11 @@
                 elXpFill.style.width = `${(me.xp / me.xpMax * 100).toFixed(1)}%`;
                 elHp.textContent = me.hp;
                 elHpFill.style.width = `${(me.hp / me.maxHp * 100).toFixed(1)}%`;
+                elStatPts.textContent = `${me.statPoints || 0} PT`;
+                elStr.textContent = me.stats?.str ?? 0;
+                elAgi.textContent = me.stats?.agi ?? 0;
+                elVit.textContent = me.stats?.vit ?? 0;
+                updateStatControls(me.statPoints || 0);
             });
             socket.on("damaged", ({ dmg }) => {
                 elHpFill.style.background = "linear-gradient(90deg,rgba(252,165,165,.5),#ef4444)";
@@ -1103,8 +1227,11 @@
                 delete renderMonsters[monsterId];
                 if (killerId === myId) addChatLine(`<span class="ct">TARGET DOWN :: +${xp} XP</span>`, "sys");
             });
-            socket.on("levelUp", ({ id, level, name }) => {
-                if (id === myId) showLevelUpFlash(level);
+            socket.on("levelUp", ({ id, level, name, gained, statPoints }) => {
+                if (id === myId) {
+                    showLevelUpFlash(level);
+                    addChatLine(`<span class="ct">LEVEL UP :: +${gained * 3} STAT PTS :: TOTAL ${statPoints}</span>`, "lvlup");
+                }
                 addChatLine(`<span class="ct"><b>${escHtml(name)}</b> :: LEVEL <b>${level}</b></span>`, "lvlup");
             });
             socket.on("chat", ({ id, name, text }) => {
@@ -1124,6 +1251,7 @@
             }
             keys.up = keys.down = keys.left = keys.right = false;
             lastKeys = {};
+            keyOrder = { up: 0, down: 0, left: 0, right: 0 };
             myId = null;
             playerMap = {};
             orbMap = {};
@@ -1145,6 +1273,11 @@
             chatLog.innerHTML = "";
             levelupFlash.classList.remove("show");
             elHpFill.style.background = "linear-gradient(90deg,rgba(248,113,113,.4),#dc2626)";
+            elStatPts.textContent = "0 PT";
+            elStr.textContent = "0";
+            elAgi.textContent = "0";
+            elVit.textContent = "0";
+            updateStatControls(0);
             camX = camY = 0;
             lastPosStr = "";
             setMsg("INFO :: disconnected", "info");
@@ -1190,7 +1323,7 @@
 
         function updateHudPos(me) {
             const { mx, my } = toMath(me.x, me.y),
-                pos = `(${mx},${my})`;
+                pos = `X:${mx} Y:${my}`;
             if (pos !== lastPosStr) {
                 elPos.textContent = pos;
                 lastPosStr = pos;
@@ -1353,6 +1486,7 @@
                     ctx.stroke();
                     break;
                 case "line":
+                    ctx.rotate(Date.now() * .0035);
                     ctx.strokeStyle = monster.color;
                     ctx.lineWidth = 4;
                     ctx.lineCap = "square";

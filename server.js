@@ -16,9 +16,10 @@ app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.ht
 const WORLD_W      = 3000;
 const WORLD_H      = 3000;
 const TICK_MS      = 1000 / 30;   // server physics: 30 Hz (independent of client fps)
-const PLAYER_SPEED = 4;            // px per server tick
+const BASE_PLAYER_SPEED = 4;       // px per server tick
 const BASE_RADIUS  = 18;
 const MAX_LEVEL    = 50;
+const STAT_POINTS_PER_LEVEL = 3;
 
 const MAX_ORBS     = 80;
 const ORB_RADIUS   = 7;
@@ -54,16 +55,23 @@ function randomWander(cx, cy, spread = 300) {
 function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
 function xpToNextLevel(level) { return Math.floor(30 * Math.pow(1.4, level - 1)); }
 function radiusForLevel(level) { return BASE_RADIUS + Math.floor((level - 1) * 1.5); }
+function speedForPlayer(p) { return BASE_PLAYER_SPEED + p.stats.agi * 0.22; }
+function damageForPlayer(p) { return 10 + (p.level - 1) * 3 + p.stats.str * 2; }
+function recalcDerivedStats(p) {
+  p.maxHp = 100 + p.stats.vit * 20;
+  p.hp = clamp(p.hp, 0, p.maxHp);
+}
 
 function applyLevelUp(p) {
-  let leveled = false;
+  let gained = 0;
   while (p.level < MAX_LEVEL && p.xp >= xpToNextLevel(p.level)) {
     p.xp    -= xpToNextLevel(p.level);
     p.level += 1;
-    leveled  = true;
+    gained += 1;
   }
   if (p.level >= MAX_LEVEL) p.xp = 0;
-  return leveled;
+  if (gained > 0) p.statPoints += gained * STAT_POINTS_PER_LEVEL;
+  return gained;
 }
 
 // ══════════════════════════════════════
@@ -116,10 +124,14 @@ setInterval(() => {
     if (p.keys.down)  dy += 1;
     if (p.keys.left)  dx -= 1;
     if (p.keys.right) dx += 1;
-    if (dx !== 0 && dy !== 0) { dx *= 0.707; dy *= 0.707; }
+    if (dx !== 0 && dy !== 0) {
+      if (p.keys.axis === 'x') dy = 0;
+      else dx = 0;
+    }
     const r = radiusForLevel(p.level);
-    p.x = clamp(p.x + dx * PLAYER_SPEED, r, WORLD_W - r);
-    p.y = clamp(p.y + dy * PLAYER_SPEED, r, WORLD_H - r);
+    const moveSpeed = speedForPlayer(p);
+    p.x = clamp(p.x + dx * moveSpeed, r, WORLD_W - r);
+    p.y = clamp(p.y + dy * moveSpeed, r, WORLD_H - r);
 
     // Orb pickup — [FIX #3] collect IDs first, then delete outside loop
     const toDelete = [];
@@ -132,8 +144,8 @@ setInterval(() => {
       delete orbs[oid];
     }
     if (toDelete.length > 0) {
-      const leveled = applyLevelUp(p);
-      if (leveled) io.emit('levelUp', { id: p.id, level: p.level, name: p.name });
+      const gained = applyLevelUp(p);
+      if (gained > 0) io.emit('levelUp', { id: p.id, level: p.level, name: p.name, gained, statPoints: p.statPoints });
     }
   }
 
@@ -200,6 +212,7 @@ setInterval(() => {
     r: radiusForLevel(p.level), level: p.level,
     xp: p.xp, xpMax: xpToNextLevel(p.level),
     hp: p.hp, maxHp: p.maxHp,
+    statPoints: p.statPoints, stats: p.stats,
   }));
   const snapOrbs     = Object.values(orbs);
   const snapMonsters = Object.values(monsters).map(m => ({
@@ -225,8 +238,12 @@ io.on('connection', (socket) => {
       x: pos.x, y: pos.y,
       level: 1, xp: 0,
       hp: 100, maxHp: 100,
-      keys: { up:false, down:false, left:false, right:false },
+      statPoints: 0,
+      stats: { str: 0, agi: 0, vit: 0 },
+      keys: { up:false, down:false, left:false, right:false, axis:'x' },
     };
+    recalcDerivedStats(players[socket.id]);
+    players[socket.id].hp = players[socket.id].maxHp;
     socket.emit('welcome', { id: socket.id, worldW: WORLD_W, worldH: WORLD_H });
   });
 
@@ -235,6 +252,7 @@ io.on('connection', (socket) => {
     players[socket.id].keys = {
       up: !!keys.up, down: !!keys.down,
       left: !!keys.left, right: !!keys.right,
+      axis: keys.axis === 'y' ? 'y' : 'x',
     };
   });
 
@@ -243,16 +261,29 @@ io.on('connection', (socket) => {
     const m = monsters[monsterId];
     if (!p || !m) return;
     if (dist(p, m) > radiusForLevel(p.level) + m.r + 10) return;
-    const dmg = 10 + (p.level - 1) * 3;
+    const dmg = damageForPlayer(p);
     m.hp -= dmg;
     socket.emit('attackResult', { monsterId, dmg, hp: m.hp });
     if (m.hp <= 0) {
       p.xp += m.xp;
-      const leveled = applyLevelUp(p);
-      if (leveled) io.emit('levelUp', { id: p.id, level: p.level, name: p.name });
+      const gained = applyLevelUp(p);
+      if (gained > 0) io.emit('levelUp', { id: p.id, level: p.level, name: p.name, gained, statPoints: p.statPoints });
       io.emit('monsterDied', { monsterId, killerId: p.id, xp: m.xp });
       delete monsters[monsterId];
     }
+  });
+
+  socket.on('allocateStat', ({ stat }, ack) => {
+    const p = players[socket.id];
+    if (!p) return ack && ack({ ok: false, error: 'not_joined' });
+    if (!['str', 'agi', 'vit'].includes(stat)) return ack && ack({ ok: false, error: 'bad_stat' });
+    if (p.statPoints <= 0) return ack && ack({ ok: false, error: 'no_points' });
+    const prevMaxHp = p.maxHp;
+    p.statPoints -= 1;
+    p.stats[stat] += 1;
+    recalcDerivedStats(p);
+    if (stat === 'vit') p.hp = clamp(p.hp + (p.maxHp - prevMaxHp), 0, p.maxHp);
+    if (ack) ack({ ok: true, statPoints: p.statPoints, stats: p.stats, hp: p.hp, maxHp: p.maxHp });
   });
 
   socket.on('chat', (raw) => {
