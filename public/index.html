@@ -955,8 +955,6 @@
         const TILE = 60,
             keys = { up: false, down: false, left: false, right: false };
         let lastKeys = {},
-            keySeq = 0,
-            keyOrder = { up: 0, down: 0, left: 0, right: 0 },
             gameRunning = false,
             rafId = null,
             attackCooldown = false;
@@ -998,24 +996,19 @@
             if (e.key === "ArrowRight" || e.key === "d" || e.key === "D") dir = "right";
             if (!dir) return;
             keys[dir] = v;
-            if (v) keyOrder[dir] = ++keySeq;
-        }
-
-        function currentMoveAxis() {
-            const horizontal = Math.max(keys.left ? keyOrder.left : -1, keys.right ? keyOrder.right : -1);
-            const vertical = Math.max(keys.up ? keyOrder.up : -1, keys.down ? keyOrder.down : -1);
-            if (horizontal < 0 && vertical < 0) return "x";
-            return horizontal >= vertical ? "x" : "y";
         }
 
         function sendKeys() {
             if (!socket) return;
-            const axis = currentMoveAxis();
-            const changed = keys.up !== lastKeys.up || keys.down !== lastKeys.down || keys.left !== lastKeys.left || keys.right !== lastKeys.right || axis !== lastKeys.axis;
+            const changed = keys.up !== lastKeys.up || keys.down !== lastKeys.down || keys.left !== lastKeys.left || keys.right !== lastKeys.right;
             if (changed) {
-                socket.emit("keys", { ...keys, axis });
-                lastKeys = { ...keys, axis };
+                socket.emit("keys", { ...keys });
+                lastKeys = { ...keys };
             }
+        }
+
+        function attackRangeForPlayer(player) {
+            return player?.atkRange ?? (player?.r ? player.r + 26 : 0);
         }
 
         function tryAttackAt(clientX, clientY) {
@@ -1028,12 +1021,13 @@
             let nearest = null,
                 nearScore = Infinity;
             for (const monster of Object.values(renderMonsters)) {
-                const worldDist = Math.hypot(me.x - monster.x, me.y - monster.y);
-                if (worldDist > me.r + monster.r + 10) continue;
+                const worldDist = Math.hypot(me.x - monster.x, me.y - monster.y),
+                    maxWorldDist = attackRangeForPlayer(me) + monster.r;
+                if (worldDist > maxWorldDist) continue;
                 const sx = monster.x - camX,
                     sy = monster.y - camY,
                     cursorDist = Math.hypot(mx - sx, my - sy),
-                    score = cursorDist <= monster.r + 14 ? cursorDist : cursorDist + 120;
+                    score = cursorDist <= monster.r + 18 ? cursorDist - 80 : worldDist + cursorDist * .15;
                 if (score < nearScore) {
                     nearScore = score;
                     nearest = monster;
@@ -1251,7 +1245,6 @@
             }
             keys.up = keys.down = keys.left = keys.right = false;
             lastKeys = {};
-            keyOrder = { up: 0, down: 0, left: 0, right: 0 };
             myId = null;
             playerMap = {};
             orbMap = {};
@@ -1486,7 +1479,7 @@
                     ctx.stroke();
                     break;
                 case "line":
-                    ctx.rotate(Date.now() * .0035);
+                    ctx.rotate((performance.now() * .0035) % (Math.PI * 2));
                     ctx.strokeStyle = monster.color;
                     ctx.lineWidth = 4;
                     ctx.lineCap = "square";
@@ -1565,6 +1558,15 @@
                 sy = player.y - camY;
             if (sx < -100 || sx > viewW + 100 || sy < -100 || sy > viewH + 100) return;
             ctx.save();
+            if (isMe && player.atkRange) {
+                ctx.beginPath();
+                ctx.arc(sx, sy, player.atkRange, 0, Math.PI * 2);
+                ctx.strokeStyle = "rgba(220,38,38,.22)";
+                ctx.lineWidth = 1.5;
+                ctx.setLineDash([6, 6]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
             ctx.beginPath();
             ctx.arc(sx, sy, player.r, 0, Math.PI * 2);
             ctx.fillStyle = isMe ? C.player : C.playerOther;

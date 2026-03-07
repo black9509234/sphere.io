@@ -57,6 +57,7 @@ function xpToNextLevel(level) { return Math.floor(30 * Math.pow(1.4, level - 1))
 function radiusForLevel(level) { return BASE_RADIUS + Math.floor((level - 1) * 1.5); }
 function speedForPlayer(p) { return BASE_PLAYER_SPEED + p.stats.agi * 0.22; }
 function damageForPlayer(p) { return 10 + (p.level - 1) * 3 + p.stats.str * 2; }
+function attackRangeForPlayer(p) { return radiusForLevel(p.level) + 26 + p.stats.str * 1.5; }
 function recalcDerivedStats(p) {
   p.maxHp = 100 + p.stats.vit * 20;
   p.hp = clamp(p.hp, 0, p.maxHp);
@@ -124,10 +125,7 @@ setInterval(() => {
     if (p.keys.down)  dy += 1;
     if (p.keys.left)  dx -= 1;
     if (p.keys.right) dx += 1;
-    if (dx !== 0 && dy !== 0) {
-      if (p.keys.axis === 'x') dy = 0;
-      else dx = 0;
-    }
+    if (dx !== 0 && dy !== 0) { dx *= 0.707; dy *= 0.707; }
     const r = radiusForLevel(p.level);
     const moveSpeed = speedForPlayer(p);
     p.x = clamp(p.x + dx * moveSpeed, r, WORLD_W - r);
@@ -212,6 +210,7 @@ setInterval(() => {
     r: radiusForLevel(p.level), level: p.level,
     xp: p.xp, xpMax: xpToNextLevel(p.level),
     hp: p.hp, maxHp: p.maxHp,
+    atkRange: attackRangeForPlayer(p),
     statPoints: p.statPoints, stats: p.stats,
   }));
   const snapOrbs     = Object.values(orbs);
@@ -240,7 +239,7 @@ io.on('connection', (socket) => {
       hp: 100, maxHp: 100,
       statPoints: 0,
       stats: { str: 0, agi: 0, vit: 0 },
-      keys: { up:false, down:false, left:false, right:false, axis:'x' },
+      keys: { up:false, down:false, left:false, right:false },
     };
     recalcDerivedStats(players[socket.id]);
     players[socket.id].hp = players[socket.id].maxHp;
@@ -252,7 +251,6 @@ io.on('connection', (socket) => {
     players[socket.id].keys = {
       up: !!keys.up, down: !!keys.down,
       left: !!keys.left, right: !!keys.right,
-      axis: keys.axis === 'y' ? 'y' : 'x',
     };
   });
 
@@ -260,7 +258,7 @@ io.on('connection', (socket) => {
     const p = players[socket.id];
     const m = monsters[monsterId];
     if (!p || !m) return;
-    if (dist(p, m) > radiusForLevel(p.level) + m.r + 10) return;
+    if (dist(p, m) > attackRangeForPlayer(p) + m.r) return;
     const dmg = damageForPlayer(p);
     m.hp -= dmg;
     socket.emit('attackResult', { monsterId, dmg, hp: m.hp });
