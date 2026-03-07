@@ -346,6 +346,14 @@
             display: none !important;
         }
 
+        .panel-body[hidden] {
+            display: none !important;
+        }
+
+        .panel-shell.collapsed-shell {
+            gap: 0;
+        }
+
         .hud-panel,
         #controls-card,
         #chat-wrap>.chat-head,
@@ -1751,6 +1759,13 @@
             controls: controlsBody,
             chat: chatBody,
         };
+        const panelShells = {
+            hud: document.getElementById("hud"),
+            class: document.querySelector("#class-screen .class-box"),
+            inventory: document.getElementById("inventory-panel"),
+            controls: document.getElementById("controls-card"),
+            chat: document.getElementById("chat-wrap"),
+        };
         const panelButtons = {
             hud: document.getElementById("hud-toggle"),
             class: document.getElementById("class-collapse"),
@@ -1771,11 +1786,16 @@
 
         function applyPanelState(name) {
             const body = panelBodies[name];
+            const shell = panelShells[name];
             const button = panelButtons[name];
             if (!body || !button) return;
             const collapsed = !!panelState[name];
             body.classList.toggle("collapsed", collapsed);
+            body.hidden = collapsed;
+            if (!collapsed) body.style.display = "";
+            if (shell) shell.classList.toggle("collapsed-shell", collapsed);
             button.textContent = collapsed ? "+" : "-";
+            button.setAttribute("aria-expanded", collapsed ? "false" : "true");
         }
 
         function togglePanel(name, force) {
