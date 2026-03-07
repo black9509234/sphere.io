@@ -556,6 +556,7 @@
             margin-top: 2px;
         }
 
+        #class-toggle,
         #inventory-toggle,
         #inventory-panel {
             border: 1px solid var(--border);
@@ -564,16 +565,121 @@
             box-shadow: 0 10px 24px rgba(18, 18, 18, .08);
         }
 
+        #class-toggle,
         #inventory-toggle {
             position: fixed;
             top: 48px;
-            right: 12px;
             z-index: 21;
             display: none;
             padding: 8px 10px;
             border-radius: 2px;
             color: var(--accent);
             font: 700 11px var(--mono);
+            letter-spacing: .12em;
+            text-transform: uppercase;
+        }
+
+        #class-toggle {
+            right: 118px;
+        }
+
+        #inventory-toggle {
+            right: 12px;
+        }
+
+        #class-screen {
+            position: fixed;
+            inset: 0;
+            z-index: 23;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            background: rgba(252, 252, 249, .72);
+            backdrop-filter: blur(8px);
+        }
+
+        .class-box {
+            width: min(640px, calc(100vw - 24px));
+            max-height: min(640px, calc(100vh - 24px));
+            padding: 14px;
+            overflow-y: auto;
+            border: 1px solid var(--border2);
+            border-radius: 4px;
+            background: linear-gradient(180deg, rgba(255, 255, 255, .96), rgba(243, 243, 238, .96));
+            box-shadow: var(--shadow);
+        }
+
+        .class-sub {
+            margin-bottom: 14px;
+        }
+
+        .class-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .class-card {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 14px;
+            border: 1px solid rgba(17, 17, 17, .1);
+            border-radius: 3px;
+            background: rgba(255, 255, 255, .82);
+            text-align: left;
+            transition: border-color .16s, transform .16s, box-shadow .16s;
+        }
+
+        .class-card:hover:not(:disabled) {
+            border-color: rgba(17, 17, 17, .2);
+            transform: translateY(-1px);
+            box-shadow: 0 12px 24px rgba(18, 18, 18, .08);
+        }
+
+        .class-card:disabled {
+            cursor: default;
+            opacity: .88;
+        }
+
+        .class-card.chosen {
+            border-color: rgba(37, 99, 235, .34);
+            background: rgba(219, 234, 254, .55);
+            box-shadow: inset 0 0 0 1px rgba(37, 99, 235, .16);
+        }
+
+        .class-kicker {
+            color: var(--soft);
+            font: 10px var(--mono);
+            letter-spacing: .16em;
+            text-transform: uppercase;
+        }
+
+        .class-name {
+            font-size: 18px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .class-copy {
+            min-height: 52px;
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .class-action {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 28px;
+            padding: 0 10px;
+            border: 1px solid rgba(17, 17, 17, .12);
+            border-radius: 2px;
+            background: rgba(17, 17, 17, .04);
+            color: var(--accent);
+            font: 700 10px var(--mono);
             letter-spacing: .12em;
             text-transform: uppercase;
         }
@@ -613,6 +719,7 @@
             align-items: center;
         }
 
+        #class-close,
         #inventory-close {
             min-width: 26px;
             height: 26px;
@@ -881,6 +988,10 @@
                 top: 12px;
             }
 
+            #class-toggle {
+                right: 118px;
+            }
+
             #controls-card {
                 left: 12px;
                 bottom: 12px;
@@ -927,7 +1038,8 @@
 
             .hud-stats,
             .gear-grid,
-            .mode-row {
+            .mode-row,
+            .class-grid {
                 grid-template-columns: 1fr;
             }
 
@@ -987,6 +1099,7 @@
                 <div class="hi-label" data-i18n="hud_player">PLAYER</div>
                 <div class="hi-value" id="h-user">guest</div>
                 <div class="hi-sub" data-i18n="hud_player_sub">connected pilot</div>
+                <div class="hi-sub" id="h-class">CLASS :: UNASSIGNED</div>
             </div>
             <div class="hud-chip">
                 <div class="hi-line"><span class="hi-label" data-i18n="hud_level">LEVEL</span><span class="hi-value">Lv.<span
@@ -1063,7 +1176,21 @@
             </div>
         </div>
     </div>
+    <button id="class-toggle" onclick="toggleClassScreen()" data-i18n="btn_class">CLASS</button>
     <button id="inventory-toggle" onclick="toggleInventory()" data-i18n="btn_inventory">INVENTORY</button>
+    <div id="class-screen">
+        <div class="class-box">
+            <div class="inventory-head">
+                <div>
+                    <div class="chat-kicker" data-i18n="class_screen_kicker">CLASS</div>
+                    <div class="control-title" data-i18n="class_screen_title">SELECT CLASS</div>
+                </div>
+                <button id="class-close" onclick="toggleClassScreen(false)">X</button>
+            </div>
+            <div class="auth-sub class-sub" id="class-sub">Reach level 15 to unlock class selection.</div>
+            <div class="class-grid" id="class-options"></div>
+        </div>
+    </div>
     <div id="inventory-panel">
         <div class="inventory-head">
             <div>
@@ -1096,6 +1223,7 @@
             <div class="control-row"><span data-i18n="controls_move">MOVE</span><span class="kbd">WASD</span></div>
             <div class="control-row"><span data-i18n="controls_attack">ATTACK</span><span class="kbd">LMB</span></div>
             <div class="control-row"><span data-i18n="controls_chat">CHAT</span><span class="kbd">ENTER</span></div>
+            <div class="control-row"><span data-i18n="controls_class">CLASS</span><span class="kbd">C</span></div>
             <div class="control-row"><span data-i18n="controls_inventory">INVENTORY</span><span class="kbd">E</span></div>
             <div class="control-row"><span data-i18n="controls_close">CLOSE</span><span class="kbd">ESC</span></div>
         </div>
@@ -1269,6 +1397,50 @@
         });
 
         Object.assign(I18N.ko, {
+            btn_class: "직업군",
+            hud_class_value: "직업군 :: {name}",
+            class_unassigned: "미선택",
+            class_screen_kicker: "클래스",
+            class_screen_title: "직업군 선택",
+            class_screen_sub_locked: "레벨 {level}부터 직업군을 선택할 수 있습니다.",
+            class_screen_sub_ready: "직업군은 한 번만 선택할 수 있습니다.",
+            class_screen_sub_chosen: "현재 직업군 :: {name}",
+            class_pick: "선택",
+            class_selected_state: "선택됨",
+            controls_class: "직업군",
+            sys_class_unlock: "클래스 해금 :: 직업군을 선택할 수 있습니다",
+            sys_class_selected: "직업군 선택 :: {name}",
+            sys_class_error_class_locked: "직업군 잠금 :: 레벨 {level}부터 가능합니다",
+            sys_class_error_class_taken: "직업군 선택 실패 :: 이미 선택했습니다",
+            sys_class_error_bad_class: "직업군 선택 실패 :: 지원되지 않는 직업군입니다",
+            sys_class_error_not_joined: "직업군 선택 실패 :: 캐릭터가 연결되지 않았습니다",
+            portal_label: "차원 포탈",
+            portal_state: "비활성",
+        });
+
+        Object.assign(I18N.en, {
+            btn_class: "CLASS",
+            hud_class_value: "CLASS :: {name}",
+            class_unassigned: "UNASSIGNED",
+            class_screen_kicker: "CLASS",
+            class_screen_title: "SELECT CLASS",
+            class_screen_sub_locked: "Class selection unlocks at level {level}.",
+            class_screen_sub_ready: "Class choice is permanent for this character.",
+            class_screen_sub_chosen: "CURRENT CLASS :: {name}",
+            class_pick: "SELECT",
+            class_selected_state: "SELECTED",
+            controls_class: "CLASS",
+            sys_class_unlock: "CLASS UNLOCKED :: choose your role",
+            sys_class_selected: "CLASS SELECTED :: {name}",
+            sys_class_error_class_locked: "CLASS LOCKED :: available at level {level}",
+            sys_class_error_class_taken: "CLASS SELECTION FAILED :: already chosen",
+            sys_class_error_bad_class: "CLASS SELECTION FAILED :: unsupported class",
+            sys_class_error_not_joined: "CLASS SELECTION FAILED :: character is not connected",
+            portal_label: "DIMENSION PORTAL",
+            portal_state: "INACTIVE",
+        });
+
+        Object.assign(I18N.ko, {
             hud_gear: "장비",
             hud_equipped: "장착",
             hud_inventory: "인벤토리",
@@ -1336,6 +1508,24 @@
             lucky_charm: { ko: "행운 부적", en: "Lucky Charm" },
         };
 
+        const CLASS_UNLOCK_LEVEL = 15;
+        const CLASS_ORDER = ["vanguard", "ranger", "mystic"];
+        const CLASS_META = {
+            vanguard: {
+                ko: { name: "선봉", desc: "정면 돌파와 생존을 맡는 전위 직업군." },
+                en: { name: "VANGUARD", desc: "Frontline class for direct engagement and staying power." },
+            },
+            ranger: {
+                ko: { name: "레인저", desc: "기동과 정밀 타격에 집중한 추적형 직업군." },
+                en: { name: "RANGER", desc: "Mobile hunter class focused on pressure and precision." },
+            },
+            mystic: {
+                ko: { name: "미스틱", desc: "보조와 제어에 특화된 후방 직업군." },
+                en: { name: "MYSTIC", desc: "Support-oriented class built around control and utility." },
+            },
+        };
+        const DECOR_PORTAL_OFFSET_X = 96;
+
         let authMode = "login",
             currentLang = localStorage.getItem(LANG_KEY) === "en" ? "en" : "ko";
 
@@ -1346,6 +1536,7 @@
 
         const elMsg = document.getElementById("auth-msg"),
             elUser = document.getElementById("h-user"),
+            elClass = document.getElementById("h-class"),
             elPos = document.getElementById("h-pos"),
             elCnt = document.getElementById("h-cnt"),
             elLv = document.getElementById("h-lv"),
@@ -1371,6 +1562,10 @@
             elInvCnt = document.getElementById("h-invcount"),
             equipList = document.getElementById("equip-list"),
             inventoryList = document.getElementById("inventory-list"),
+            classToggleBtn = document.getElementById("class-toggle"),
+            classScreen = document.getElementById("class-screen"),
+            classSub = document.getElementById("class-sub"),
+            classOptions = document.getElementById("class-options"),
             inventoryToggleBtn = document.getElementById("inventory-toggle"),
             inventoryPanel = document.getElementById("inventory-panel"),
             langBtn = document.getElementById("lang-btn"),
@@ -1378,6 +1573,114 @@
             chatInput = document.getElementById("chat-input"),
             controlsCard = document.getElementById("controls-card"),
             levelupFlash = document.getElementById("levelup-flash");
+
+        function classInfo(classKey) {
+            return CLASS_META[classKey]?.[currentLang] || CLASS_META[classKey]?.en || null;
+        }
+
+        function className(classKey) {
+            return classInfo(classKey)?.name || t("class_unassigned");
+        }
+
+        function classDescription(classKey) {
+            return classInfo(classKey)?.desc || "";
+        }
+
+        function currentClassKey() {
+            return currentSelf?.classKey || playerMap[myId]?.classKey || null;
+        }
+
+        function classUnlocked() {
+            return !!currentSelf?.classUnlocked || !!currentClassKey() || (playerMap[myId]?.level || 0) >= CLASS_UNLOCK_LEVEL;
+        }
+
+        function classErrorMessage(code, extra = {}) {
+            const key = `sys_class_error_${code || "bad_class"}`;
+            return t(key, extra) === key ? String(code || "bad_class") : t(key, extra);
+        }
+
+        function renderClassOptions() {
+            if (!classOptions) return;
+            const selectedClass = currentClassKey();
+            classOptions.innerHTML = "";
+            for (const classKey of CLASS_ORDER) {
+                const card = document.createElement("button");
+                card.type = "button";
+                card.className = "class-card" + (selectedClass === classKey ? " chosen" : "");
+                card.disabled = classSelectionPending || !!selectedClass;
+
+                const kicker = document.createElement("div");
+                kicker.className = "class-kicker";
+                kicker.textContent = t("class_screen_kicker");
+
+                const nameNode = document.createElement("div");
+                nameNode.className = "class-name";
+                nameNode.textContent = className(classKey);
+
+                const copyNode = document.createElement("div");
+                copyNode.className = "class-copy";
+                copyNode.textContent = classDescription(classKey);
+
+                const actionNode = document.createElement("div");
+                actionNode.className = "class-action";
+                actionNode.textContent = selectedClass === classKey ? t("class_selected_state") : t("class_pick");
+
+                card.appendChild(kicker);
+                card.appendChild(nameNode);
+                card.appendChild(copyNode);
+                card.appendChild(actionNode);
+                if (!selectedClass) card.onclick = () => selectClass(classKey);
+                classOptions.appendChild(card);
+            }
+        }
+
+        function syncClassUi() {
+            const unlocked = gameRunning && classUnlocked();
+            const selectedClass = currentClassKey();
+            elClass.textContent = t("hud_class_value", { name: className(selectedClass) });
+            classToggleBtn.style.display = unlocked ? "block" : "none";
+            classToggleBtn.textContent = t("btn_class");
+            if (!unlocked) {
+                classSub.textContent = t("class_screen_sub_locked", { level: CLASS_UNLOCK_LEVEL });
+            } else if (selectedClass) {
+                classSub.textContent = t("class_screen_sub_chosen", { name: className(selectedClass) });
+            } else {
+                classSub.textContent = t("class_screen_sub_ready", { level: CLASS_UNLOCK_LEVEL });
+            }
+            renderClassOptions();
+            if (!unlocked && classScreenOpen) toggleClassScreen(false);
+            if (unlocked && !selectedClass && !classPrompted) {
+                classPrompted = true;
+                addChatLine(`<span class="ct">${escHtml(t("sys_class_unlock"))}</span>`, "lvlup");
+                toggleClassScreen(true);
+            }
+        }
+
+        function toggleClassScreen(force) {
+            const next = typeof force === "boolean" ? force : !classScreenOpen;
+            if (next && !gameRunning) return;
+            if (next && !classUnlocked()) return;
+            classScreenOpen = next;
+            classScreen.style.display = classScreenOpen ? "flex" : "none";
+            if (classScreenOpen) renderClassOptions();
+        }
+
+        function selectClass(classKey) {
+            if (!socket || classSelectionPending || currentClassKey()) return;
+            classSelectionPending = true;
+            renderClassOptions();
+            socket.emit("selectClass", { classKey }, res => {
+                classSelectionPending = false;
+                if (!res?.ok) {
+                    addChatLine(`<span class="ct">${escHtml(classErrorMessage(res?.error, { level: res?.unlockLevel || CLASS_UNLOCK_LEVEL }))}</span>`, "sys");
+                    syncClassUi();
+                    return;
+                }
+                applySelfState(res.self || currentSelf);
+                addChatLine(`<span class="ct">${escHtml(t("sys_class_selected", { name: className(res.classKey) }))}</span>`, "lvlup");
+                toggleClassScreen(false);
+            });
+        }
 
         function renderStaticI18n() {
             document.documentElement.lang = currentLang;
@@ -1391,6 +1694,7 @@
             elStatPts.textContent = t("stat_points", { count: Number.parseInt(elStatPts.textContent, 10) || 0 });
             langBtn.textContent = currentLang === "ko" ? "EN" : "KO";
             renderLoadout(true);
+            syncClassUi();
         }
 
         function toggleLanguage() {
@@ -1474,6 +1778,9 @@
 
         resize();
         addEventListener("resize", resize);
+        classScreen.addEventListener("mousedown", e => {
+            if (e.target === classScreen) toggleClassScreen(false);
+        });
 
         let socket,
             myId = null,
@@ -1491,6 +1798,9 @@
         let lastKeys = {},
             gameRunning = false,
             inventoryOpen = false,
+            classScreenOpen = false,
+            classPrompted = false,
+            classSelectionPending = false,
             lastLoadoutSignature = "",
             rafId = null,
             attackCooldown = false;
@@ -1503,8 +1813,20 @@
                 e.preventDefault();
                 return;
             }
+            if (e.key === "c" || e.key === "C") {
+                if (gameRunning && classUnlocked() && !chatFocused()) {
+                    toggleClassScreen();
+                    e.preventDefault();
+                }
+                return;
+            }
             if (e.key === "Escape" && inventoryOpen) {
                 toggleInventory(false);
+                e.preventDefault();
+                return;
+            }
+            if (e.key === "Escape" && classScreenOpen) {
+                toggleClassScreen(false);
                 e.preventDefault();
                 return;
             }
@@ -1697,6 +2019,7 @@
         function applySelfState(self) {
             currentSelf = self || null;
             renderLoadout();
+            syncClassUi();
         }
 
         function tryAttackAt(clientX, clientY) {
@@ -2000,6 +2323,9 @@
             keys.up = keys.down = keys.left = keys.right = false;
             lastKeys = {};
             attackCooldown = false;
+            classScreenOpen = false;
+            classPrompted = false;
+            classSelectionPending = false;
             myId = null;
             playerMap = {};
             orbMap = {};
@@ -2017,6 +2343,8 @@
             }
             document.getElementById("hud").style.display = "none";
             document.getElementById("logout-btn").style.display = "none";
+            classToggleBtn.style.display = "none";
+            classScreen.style.display = "none";
             inventoryToggleBtn.style.display = "none";
             inventoryPanel.style.display = "none";
             document.getElementById("chat-wrap").style.display = "none";
@@ -2027,6 +2355,7 @@
             chatLog.innerHTML = "";
             levelupFlash.classList.remove("show");
             elHpFill.style.background = "linear-gradient(90deg,rgba(248,113,113,.4),#dc2626)";
+            elClass.textContent = t("hud_class_value", { name: t("class_unassigned") });
             elStatPts.textContent = t("stat_points", { count: 0 });
             elStr.textContent = "0";
             elAgi.textContent = "0";
@@ -2209,6 +2538,54 @@
                 ctx.textAlign = c.align;
                 ctx.fillText(c.text, c.x, c.y);
             });
+        }
+
+        function drawPortal() {
+            const portal = {
+                x: worldW - DECOR_PORTAL_OFFSET_X,
+                y: worldH / 2,
+                r: 34,
+            };
+            const sx = portal.x - camX,
+                sy = portal.y - camY;
+            if (sx < -120 || sx > viewW + 120 || sy < -120 || sy > viewH + 120) return;
+
+            const pulse = .86 + .14 * Math.sin(performance.now() * .0032);
+
+            ctx.save();
+            ctx.fillStyle = "rgba(17,17,17,.08)";
+            roundRect(ctx, sx - 52, sy + 34, 104, 16, 3);
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(sx, sy, portal.r + 10, 0, Math.PI * 2);
+            ctx.fillStyle = "rgba(37,99,235,.08)";
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(sx, sy, portal.r * pulse, 0, Math.PI * 2);
+            ctx.fillStyle = "rgba(96,165,250,.18)";
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(sx, sy, portal.r, 0, Math.PI * 2);
+            ctx.strokeStyle = "rgba(37,99,235,.58)";
+            ctx.lineWidth = 6;
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(sx, sy, portal.r - 11, 0, Math.PI * 2);
+            ctx.strokeStyle = "rgba(59,130,246,.75)";
+            ctx.lineWidth = 3;
+            ctx.setLineDash([8, 6]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            drawPill(`${t("portal_label")} :: ${t("portal_state")}`, sx, sy - portal.r - 20, {
+                font: "700 10px Consolas, monospace",
+                bg: "rgba(255,255,255,.92)",
+            });
+            ctx.restore();
         }
 
         function drawOrbs() {
@@ -2426,6 +2803,7 @@
             }
             drawGrid();
             drawBorder();
+            drawPortal();
             drawOrbs();
             drawLoots();
             Object.values(renderMonsters).forEach(drawMonster);

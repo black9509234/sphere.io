@@ -44,6 +44,12 @@ const MONSTER_TYPES = [
 
 const DEFAULT_STATS = Object.freeze({ str: 0, agi: 0, vit: 0, dex: 0, wis: 0, luk: 0 });
 const EQUIP_SLOTS = Object.freeze(['weapon', 'armor', 'boots', 'gloves', 'charm']);
+const CLASS_UNLOCK_LEVEL = 15;
+const CLASS_DEFS = Object.freeze({
+  vanguard: { key: 'vanguard' },
+  ranger: { key: 'ranger' },
+  mystic: { key: 'mystic' },
+});
 const ITEM_DEFS = Object.freeze({
   iron_blade: {
     key: 'iron_blade',
@@ -161,6 +167,10 @@ function normalizeStats(raw = {}) {
     wis: clamp(Number(raw.wis) || 0, 0, 999),
     luk: clamp(Number(raw.luk) || 0, 0, 999),
   };
+}
+
+function normalizeClassKey(raw) {
+  return typeof raw === 'string' && CLASS_DEFS[raw] ? raw : null;
 }
 
 function addStats(target, bonus) {
@@ -305,6 +315,7 @@ function serializePlayerProfile(p) {
     xp: p.xp,
     hp: p.hp,
     statPoints: p.statPoints,
+    classKey: p.classKey,
     stats: p.stats,
     inventory: p.inventory,
     equipment: p.equipment,
@@ -331,6 +342,7 @@ function makePlayerState(socketId, name, saved = {}) {
   const stats = normalizeStats(saved.stats || DEFAULT_STATS);
   const inventory = normalizeInventory(saved.inventory);
   const equipment = normalizeEquipment(saved.equipment);
+  const classKey = normalizeClassKey(saved.classKey);
   const level = clamp(Number(saved.level) || 1, 1, MAX_LEVEL);
   const r = radiusForLevel(level);
   const defaultPos = randomPos(PLAYER_RADIUS);
@@ -348,6 +360,7 @@ function makePlayerState(socketId, name, saved = {}) {
     hp: 100,
     maxHp: 100,
     statPoints: clamp(Number(saved.statPoints) || 0, 0, 9999),
+    classKey,
     stats,
     inventory,
     equipment,
@@ -418,6 +431,8 @@ function applyDeathPenalty(p) {
 
 function buildSelfState(p, loots) {
   return {
+    classKey: p.classKey,
+    classUnlocked: p.level >= CLASS_UNLOCK_LEVEL,
     stats: getTotalStats(p),
     statPoints: p.statPoints,
     hp: p.hp,
@@ -668,6 +683,7 @@ setInterval(() => {
     level: p.level,
     xp: p.xp,
     xpMax: xpToNextLevel(p.level),
+    classKey: p.classKey,
     hp: p.hp,
     maxHp: p.maxHp,
     atkRange: attackRangeForPlayer(p),
@@ -785,6 +801,27 @@ io.on('connection', socket => {
         stats: getTotalStats(p),
         hp: p.hp,
         maxHp: p.maxHp,
+      });
+    }
+  });
+
+  socket.on('selectClass', ({ classKey }, ack) => {
+    const p = players[socket.id];
+    if (!p) return ack && ack({ ok: false, error: 'not_joined' });
+    if (p.level < CLASS_UNLOCK_LEVEL) return ack && ack({ ok: false, error: 'class_locked', unlockLevel: CLASS_UNLOCK_LEVEL });
+    if (p.classKey) return ack && ack({ ok: false, error: 'class_taken', classKey: p.classKey });
+    const nextClassKey = normalizeClassKey(classKey);
+    if (!nextClassKey) return ack && ack({ ok: false, error: 'bad_class' });
+
+    p.classKey = nextClassKey;
+    emitSelfState(socket.id, p);
+    persistPlayerProfile(p);
+
+    if (ack) {
+      ack({
+        ok: true,
+        classKey: p.classKey,
+        self: buildSelfState(p, playerLootsFor(p)),
       });
     }
   });
