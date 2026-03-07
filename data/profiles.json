@@ -25,5 +25,32 @@
       "gloves": null,
       "charm": null
     }
+  },
+  "dbg1772858534419": {
+    "name": "dbg1772858534419",
+    "x": 1478,
+    "y": 2101,
+    "level": 15,
+    "xp": 0,
+    "hp": 100,
+    "statPoints": 42,
+    "classKey": "vanguard",
+    "mapId": "field",
+    "stats": {
+      "str": 0,
+      "agi": 0,
+      "vit": 0,
+      "dex": 0,
+      "wis": 0,
+      "luk": 0
+    },
+    "inventory": [],
+    "equipment": {
+      "weapon": null,
+      "armor": null,
+      "boots": null,
+      "gloves": null,
+      "charm": null
+    }
   }
 }
