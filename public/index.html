@@ -447,10 +447,6 @@
             cursor: default;
         }
 
-        .hud-chip-wide {
-            grid-column: 1 / -1;
-        }
-
         .gear-grid {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -487,6 +483,31 @@
             border: 1px solid rgba(17, 17, 17, .08);
             border-radius: 2px;
             background: rgba(255, 255, 255, .62);
+        }
+
+        .gear-row.slot-weapon {
+            background: rgba(185, 28, 28, .1);
+            border-color: rgba(185, 28, 28, .2);
+        }
+
+        .gear-row.slot-armor {
+            background: rgba(71, 85, 105, .12);
+            border-color: rgba(71, 85, 105, .22);
+        }
+
+        .gear-row.slot-boots {
+            background: rgba(37, 99, 235, .1);
+            border-color: rgba(37, 99, 235, .18);
+        }
+
+        .gear-row.slot-gloves {
+            background: rgba(124, 58, 237, .1);
+            border-color: rgba(124, 58, 237, .18);
+        }
+
+        .gear-row.slot-charm {
+            background: rgba(217, 119, 6, .1);
+            border-color: rgba(217, 119, 6, .2);
         }
 
         .gear-main {
@@ -533,6 +554,73 @@
 
         .gear-note {
             margin-top: 2px;
+        }
+
+        #inventory-toggle,
+        #inventory-panel {
+            border: 1px solid var(--border);
+            background: var(--panel);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 24px rgba(18, 18, 18, .08);
+        }
+
+        #inventory-toggle {
+            position: fixed;
+            top: 48px;
+            right: 12px;
+            z-index: 21;
+            display: none;
+            padding: 8px 10px;
+            border-radius: 2px;
+            color: var(--accent);
+            font: 700 11px var(--mono);
+            letter-spacing: .12em;
+            text-transform: uppercase;
+        }
+
+        #inventory-panel {
+            position: fixed;
+            top: 84px;
+            right: 12px;
+            z-index: 22;
+            display: none;
+            width: min(320px, calc(100vw - 24px));
+            max-height: calc(100vh - 108px);
+            padding: 10px;
+            border-radius: 3px;
+            overflow-y: auto;
+        }
+
+        #inventory-panel::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #inventory-panel::-webkit-scrollbar-thumb {
+            background: rgba(17, 17, 17, .18);
+            border-radius: 2px;
+        }
+
+        .inventory-head,
+        .inventory-meta {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .inventory-meta {
+            margin: 8px 0 10px;
+            align-items: center;
+        }
+
+        #inventory-close {
+            min-width: 26px;
+            height: 26px;
+            border: 1px solid rgba(17, 17, 17, .12);
+            border-radius: 2px;
+            background: rgba(17, 17, 17, .04);
+            color: var(--accent);
+            font: 700 12px var(--mono);
         }
 
         .track {
@@ -973,21 +1061,32 @@
                     </div>
                 </div>
             </div>
-            <div class="hud-chip hud-chip-wide interactive">
-                <div class="hi-line"><span class="hi-label" data-i18n="hud_gear">GEAR</span><span class="hi-sub" id="h-lootcnt">0 drops nearby</span></div>
-                <div class="gear-grid">
-                    <div class="gear-col">
-                        <div class="gear-head"><span class="hi-label" data-i18n="hud_equipped">EQUIPPED</span></div>
-                        <div class="gear-list" id="equip-list"></div>
-                    </div>
-                    <div class="gear-col">
-                        <div class="gear-head"><span class="hi-label" data-i18n="hud_inventory">INVENTORY</span><span class="hi-sub" id="h-invcount">0 / 12</span></div>
-                        <div class="gear-list" id="inventory-list"></div>
-                    </div>
-                </div>
-                <div class="gear-note" data-i18n="hud_penalty">Death can cost XP, a stat point, and one owned item.</div>
+        </div>
+    </div>
+    <button id="inventory-toggle" onclick="toggleInventory()" data-i18n="btn_inventory">INVENTORY</button>
+    <div id="inventory-panel">
+        <div class="inventory-head">
+            <div>
+                <div class="chat-kicker" data-i18n="hud_gear">GEAR</div>
+                <div class="control-title" data-i18n="hud_inventory">INVENTORY</div>
+            </div>
+            <button id="inventory-close" onclick="toggleInventory(false)">X</button>
+        </div>
+        <div class="inventory-meta">
+            <span class="hi-sub" id="h-lootcnt">0 drops nearby</span>
+            <span class="hi-sub" id="h-invcount">0 / 12</span>
+        </div>
+        <div class="gear-grid">
+            <div class="gear-col">
+                <div class="gear-head"><span class="hi-label" data-i18n="hud_equipped">EQUIPPED</span></div>
+                <div class="gear-list" id="equip-list"></div>
+            </div>
+            <div class="gear-col">
+                <div class="gear-head"><span class="hi-label" data-i18n="hud_inventory">INVENTORY</span></div>
+                <div class="gear-list" id="inventory-list"></div>
             </div>
         </div>
+        <div class="gear-note" data-i18n="hud_penalty">Death can cost XP, a stat point, and one owned item.</div>
     </div>
     <button id="logout-btn" onclick="doLogout()" data-i18n="btn_disconnect">DISCONNECT</button>
     <div id="controls-card">
@@ -997,6 +1096,7 @@
             <div class="control-row"><span data-i18n="controls_move">MOVE</span><span class="kbd">WASD</span></div>
             <div class="control-row"><span data-i18n="controls_attack">ATTACK</span><span class="kbd">LMB</span></div>
             <div class="control-row"><span data-i18n="controls_chat">CHAT</span><span class="kbd">ENTER</span></div>
+            <div class="control-row"><span data-i18n="controls_inventory">INVENTORY</span><span class="kbd">E</span></div>
             <div class="control-row"><span data-i18n="controls_close">CLOSE</span><span class="kbd">ESC</span></div>
         </div>
     </div>
@@ -1165,8 +1265,10 @@
             inventory_count: "{count} / {limit}",
             inventory_empty: "획득한 장비가 없습니다.",
             equipment_empty: "비어 있음",
+            btn_inventory: "인벤토리",
             btn_equip: "장착",
             btn_unequip: "해제",
+            controls_inventory: "장비창",
             sys_loot_drop: "드랍 생성 :: {item}",
             sys_loot_pick: "획득 완료 :: {item}",
             sys_equip: "장착 완료 :: {item}",
@@ -1185,8 +1287,10 @@
             inventory_count: "{count} / {limit}",
             inventory_empty: "No gear collected yet.",
             equipment_empty: "Empty",
+            btn_inventory: "INVENTORY",
             btn_equip: "EQUIP",
             btn_unequip: "UNEQUIP",
+            controls_inventory: "INVENTORY",
             sys_loot_drop: "DROP SPAWNED :: {item}",
             sys_loot_pick: "LOOT SECURED :: {item}",
             sys_equip: "EQUIPPED :: {item}",
@@ -1247,6 +1351,8 @@
             elInvCnt = document.getElementById("h-invcount"),
             equipList = document.getElementById("equip-list"),
             inventoryList = document.getElementById("inventory-list"),
+            inventoryToggleBtn = document.getElementById("inventory-toggle"),
+            inventoryPanel = document.getElementById("inventory-panel"),
             langBtn = document.getElementById("lang-btn"),
             chatLog = document.getElementById("chat-log"),
             chatInput = document.getElementById("chat-input"),
@@ -1364,12 +1470,23 @@
             keys = { up: false, down: false, left: false, right: false };
         let lastKeys = {},
             gameRunning = false,
+            inventoryOpen = false,
             rafId = null,
             attackCooldown = false;
 
         renderStaticI18n();
 
         addEventListener("keydown", e => {
+            if ((e.key === "e" || e.key === "E") && gameRunning && !chatFocused()) {
+                toggleInventory();
+                e.preventDefault();
+                return;
+            }
+            if (e.key === "Escape" && inventoryOpen) {
+                toggleInventory(false);
+                e.preventDefault();
+                return;
+            }
             if (e.key === "Enter" && !chatFocused() && gameRunning) {
                 chatInput.focus();
                 e.preventDefault();
@@ -1429,11 +1546,20 @@
             return ITEM_META[item?.key]?.[currentLang] || item?.key || "UNKNOWN";
         }
 
+        function gearRowClass(item) {
+            return `gear-row slot-${item?.slot || "plain"}`;
+        }
+
         function formatBonuses(bonuses) {
             const parts = Object.entries(bonuses || {})
                 .filter(([, value]) => Number(value) > 0)
                 .map(([stat, value]) => `${stat.toUpperCase()}+${value}`);
             return parts.join(" / ") || "-";
+        }
+
+        function toggleInventory(force) {
+            inventoryOpen = typeof force === "boolean" ? force : !inventoryOpen;
+            inventoryPanel.style.display = inventoryOpen && gameRunning ? "block" : "none";
         }
 
         function renderLoadout() {
@@ -1446,7 +1572,7 @@
             equipList.innerHTML = "";
             for (const slot of SLOT_ORDER) {
                 const row = document.createElement("div");
-                row.className = "gear-row";
+                row.className = gearRowClass({ slot });
 
                 const main = document.createElement("div");
                 main.className = "gear-main";
@@ -1496,7 +1622,7 @@
 
             for (const item of inventory) {
                 const row = document.createElement("div");
-                row.className = "gear-row";
+                row.className = gearRowClass(item);
 
                 const main = document.createElement("div");
                 main.className = "gear-main";
@@ -1716,6 +1842,8 @@
             document.getElementById("auth-screen").style.display = "none";
             document.getElementById("hud").style.display = "flex";
             document.getElementById("logout-btn").style.display = "block";
+            inventoryToggleBtn.style.display = "block";
+            toggleInventory(false);
             document.getElementById("chat-wrap").style.display = "flex";
             controlsCard.style.display = "block";
             elUser.textContent = username;
@@ -1818,12 +1946,15 @@
             renderPlayers = {};
             renderMonsters = {};
             dmgNums.length = 0;
+            inventoryOpen = false;
             if (socket) {
                 socket.disconnect();
                 socket = null;
             }
             document.getElementById("hud").style.display = "none";
             document.getElementById("logout-btn").style.display = "none";
+            inventoryToggleBtn.style.display = "none";
+            inventoryPanel.style.display = "none";
             document.getElementById("chat-wrap").style.display = "none";
             controlsCard.style.display = "none";
             document.getElementById("auth-screen").style.display = "flex";
