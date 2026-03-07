@@ -471,6 +471,9 @@ function applyDeathPenalty(p) {
 
 function buildSelfState(p, loots) {
   return {
+    level: p.level,
+    xp: p.xp,
+    xpMax: xpToNextLevel(p.level),
     classKey: p.classKey,
     classUnlocked: p.level >= CLASS_UNLOCK_LEVEL,
     mapId: p.mapId,
@@ -478,6 +481,8 @@ function buildSelfState(p, loots) {
     statPoints: p.statPoints,
     hp: p.hp,
     maxHp: p.maxHp,
+    atkRange: attackRangeForPlayer(p),
+    atkCd: attackCooldownForPlayer(p),
     inventory: p.inventory,
     equipment: p.equipment,
     inventoryLimit: INVENTORY_LIMIT,

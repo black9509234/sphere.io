@@ -2329,9 +2329,29 @@
 
         function applySelfState(self) {
             currentSelf = self || null;
-            if (self?.classKey && playerMap[myId]) playerMap[myId].classKey = self.classKey;
-            if (self?.classKey && renderPlayers[myId]) renderPlayers[myId].classKey = self.classKey;
-            if (self?.mapId && playerMap[myId]) playerMap[myId].mapId = self.mapId;
+            const me = myId ? playerMap[myId] : null;
+            const renderMe = myId ? renderPlayers[myId] : null;
+            if (me && self) {
+                if (typeof self.level === "number") me.level = self.level;
+                if (typeof self.xp === "number") me.xp = self.xp;
+                if (typeof self.xpMax === "number") me.xpMax = self.xpMax;
+                if (typeof self.hp === "number") me.hp = self.hp;
+                if (typeof self.maxHp === "number") me.maxHp = self.maxHp;
+                if (typeof self.statPoints === "number") me.statPoints = self.statPoints;
+                if (self.stats) me.stats = { ...self.stats };
+                if (typeof self.atkRange === "number") me.atkRange = self.atkRange;
+                if (typeof self.atkCd === "number") me.atkCd = self.atkCd;
+                if (self.classKey) me.classKey = self.classKey;
+                if (self.mapId) me.mapId = self.mapId;
+            }
+            if (renderMe && self) {
+                if (typeof self.level === "number") renderMe.level = self.level;
+                if (typeof self.hp === "number") renderMe.hp = self.hp;
+                if (typeof self.maxHp === "number") renderMe.maxHp = self.maxHp;
+                if (typeof self.atkRange === "number") renderMe.atkRange = self.atkRange;
+                if (self.classKey) renderMe.classKey = self.classKey;
+                if (self.mapId) renderMe.mapId = self.mapId;
+            }
             renderLoadout();
             syncClassUi();
         }
