@@ -918,9 +918,23 @@
             setTimeout(() => startGame(user), 400);
         }
 
-        ["i-user", "i-pass", "i-cfm"].forEach(id => {
+        const authFieldIds = ["i-user", "i-pass", "i-cfm"];
+
+        function visibleAuthFieldIds() {
+            return authMode === "signup" ? authFieldIds : authFieldIds.slice(0, 2);
+        }
+
+        authFieldIds.forEach(id => {
             document.getElementById(id).addEventListener("keydown", e => {
-                if (e.key === "Enter") handleAuth();
+                if (e.key !== "Enter") return;
+                e.preventDefault();
+                const ids = visibleAuthFieldIds(),
+                    idx = ids.indexOf(id);
+                if (idx >= 0 && idx < ids.length - 1) {
+                    document.getElementById(ids[idx + 1]).focus();
+                    return;
+                }
+                handleAuth();
             });
         });
 
@@ -1378,8 +1392,8 @@
             }
             ctx.stroke();
 
-            const axisX = worldW / 2 - camX,
-                axisY = worldH / 2 - camY;
+            const axisX = viewW / 2,
+                axisY = viewH / 2;
             ctx.save();
             ctx.strokeStyle = C.axis;
             ctx.lineWidth = 1.6;
@@ -1407,7 +1421,8 @@
             ctx.fillStyle = C.text;
             ctx.font = "700 11px Consolas, monospace";
             ctx.textAlign = "left";
-            ctx.fillText("0", axisX + 9, axisY - 10);
+            ctx.fillText("X", viewW - 30, axisY - 10);
+            ctx.fillText("Y", axisX + 10, 30);
             drawArrow(viewW - 18, axisY, 1, 0);
             drawArrow(axisX, 18, 0, -1);
         }

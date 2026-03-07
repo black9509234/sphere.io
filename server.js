@@ -139,6 +139,7 @@ setInterval(() => {
     for (const oid of toDelete) {
       if (!orbs[oid]) continue;  // already picked by someone else this tick
       p.xp += orbs[oid].value;
+      p.hp = clamp(p.hp + orbs[oid].value, 0, p.maxHp);
       delete orbs[oid];
     }
     if (toDelete.length > 0) {
