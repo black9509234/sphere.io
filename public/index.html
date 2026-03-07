@@ -293,14 +293,14 @@
 
         #hud {
             position: fixed;
-            top: 16px;
-            left: 16px;
+            top: 12px;
+            left: 12px;
             z-index: 10;
             display: none;
             flex-direction: column;
             align-items: stretch;
-            gap: 8px;
-            width: min(420px, calc(100vw - 32px));
+            gap: 6px;
+            width: min(360px, calc(100vw - 24px));
             pointer-events: none;
         }
 
@@ -320,19 +320,6 @@
             border-radius: 3px;
         }
 
-        .hud-brand-panel {
-            min-width: 0;
-            padding: 12px 14px;
-        }
-
-        .hbrand {
-            margin: 6px 0 2px;
-            font-size: 24px;
-            font-weight: 700;
-            letter-spacing: .04em;
-            text-transform: uppercase;
-        }
-
         .hud-caption,
         .hi-sub,
         .control-row,
@@ -350,18 +337,18 @@
         .hud-stats {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 8px;
+            gap: 6px;
             width: 100%;
             min-width: 0;
-            padding: 8px;
+            padding: 6px;
         }
 
         .hud-chip {
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 4px;
             min-width: 0;
-            padding: 10px;
+            padding: 8px;
             border: 1px solid rgba(17, 17, 17, .08);
             border-radius: 2px;
             background: var(--panel2);
@@ -380,13 +367,13 @@
         }
 
         .hi-value {
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 700;
         }
 
         .hi-sub {
-            font-size: 11px;
-            line-height: 1.4;
+            font-size: 10px;
+            line-height: 1.35;
         }
 
         .stat-bar {
@@ -403,15 +390,26 @@
         .stat-list {
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 6px;
         }
 
         .stat-row {
             display: grid;
-            grid-template-columns: minmax(0, 1fr) auto auto;
-            align-items: center;
+            grid-template-columns: minmax(0, 1fr) auto;
+            align-items: start;
             gap: 8px;
             font-size: 12px;
+        }
+
+        .stat-main {
+            min-width: 0;
+        }
+
+        .stat-head {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 8px;
         }
 
         .stat-name {
@@ -420,13 +418,22 @@
         }
 
         .stat-meta {
-            color: var(--muted);
+            color: var(--accent);
             font-size: 11px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .stat-copy {
+            margin-top: 2px;
+            color: var(--muted);
+            font-size: 10px;
+            line-height: 1.35;
         }
 
         .stat-add {
-            min-width: 24px;
-            height: 24px;
+            min-width: 22px;
+            height: 22px;
             border: 1px solid rgba(17, 17, 17, .12);
             border-radius: 2px;
             background: rgba(37, 99, 235, .08);
@@ -467,11 +474,11 @@
 
         #logout-btn {
             position: fixed;
-            top: 16px;
-            right: 16px;
+            top: 12px;
+            right: 12px;
             z-index: 11;
             display: none;
-            padding: 10px 12px;
+            padding: 8px 10px;
             border-radius: 2px;
             color: var(--muted);
             font: 700 11px var(--mono);
@@ -482,10 +489,10 @@
 
         #lang-btn {
             position: fixed;
-            top: 16px;
-            right: 134px;
+            top: 12px;
+            right: 118px;
             z-index: 12;
-            padding: 10px 12px;
+            padding: 8px 10px;
             border: 1px solid rgba(17, 17, 17, .12);
             border-radius: 2px;
             background: rgba(255, 255, 255, .88);
@@ -504,12 +511,12 @@
 
         #controls-card {
             position: fixed;
-            left: 16px;
-            bottom: 16px;
+            left: 12px;
+            bottom: 12px;
             z-index: 10;
             display: none;
-            width: min(228px, calc(100vw - 32px));
-            padding: 12px;
+            width: min(196px, calc(100vw - 24px));
+            padding: 10px;
             border-radius: 3px;
         }
 
@@ -552,13 +559,13 @@
 
         #chat-wrap {
             position: fixed;
-            right: 16px;
-            bottom: 16px;
+            right: 12px;
+            bottom: 12px;
             z-index: 20;
             display: none;
-            width: min(300px, calc(100vw - 32px));
+            width: min(260px, calc(100vw - 24px));
             flex-direction: column;
-            gap: 6px;
+            gap: 5px;
             background: none;
             border: none;
             box-shadow: none;
@@ -569,7 +576,7 @@
             align-items: flex-start;
             justify-content: space-between;
             gap: 12px;
-            padding: 10px 12px;
+            padding: 8px 10px;
             border-radius: 3px;
         }
 
@@ -578,10 +585,10 @@
         }
 
         #chat-log {
-            height: 154px;
+            height: 126px;
             overflow-y: auto;
             overflow-x: hidden;
-            padding: 10px 12px;
+            padding: 8px 10px;
             border-radius: 3px;
             background: rgba(255, 255, 255, .88);
             scroll-behavior: smooth;
@@ -620,7 +627,7 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            padding: 8px;
+            padding: 6px;
             border-radius: 3px;
             background: rgba(255, 255, 255, .92);
         }
@@ -628,7 +635,7 @@
         #chat-input {
             flex: 1;
             min-width: 0;
-            padding: 8px 4px;
+            padding: 6px 4px;
             border: none;
             outline: none;
             background: transparent;
@@ -694,7 +701,7 @@
             }
 
             #lang-btn {
-                right: 126px;
+                right: 112px;
                 top: 12px;
             }
 
@@ -720,27 +727,23 @@
             #hud {
                 top: 12px;
                 left: 12px;
-                width: min(100vw - 24px, 360px);
+                width: min(100vw - 24px, 332px);
             }
 
-            .hud-brand-panel,
             .hud-stats {
                 width: 100%;
                 min-width: 0;
-            }
-
-            .hud-stats {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
             }
 
             #controls-card {
-                width: min(220px, calc(100vw - 24px));
+                width: min(188px, calc(100vw - 24px));
             }
 
             #chat-wrap {
                 right: 12px;
                 bottom: 12px;
-                width: min(280px, calc(100vw - 24px));
+                width: min(240px, calc(100vw - 24px));
             }
         }
 
@@ -802,11 +805,6 @@
     <canvas id="canvas"></canvas>
     <button id="lang-btn" onclick="toggleLanguage()">KO</button>
     <div id="hud">
-        <div class="hud-panel hud-brand-panel">
-            <div class="hud-overline" data-i18n="hud_overline">TACTICAL FEED</div>
-            <div class="hbrand">sphere.io</div>
-            <div class="hud-caption" data-i18n="hud_caption">Compact readout with angular panels and reduced obstruction.</div>
-        </div>
         <div class="hud-panel hud-stats">
             <div class="hud-chip">
                 <div class="hi-label" data-i18n="hud_player">PLAYER</div>
@@ -842,12 +840,48 @@
             <div class="hud-chip interactive">
                 <div class="hi-line"><span class="hi-label" data-i18n="hud_stats">STATS</span><span class="stat-points" id="h-statpts">0 PT</span></div>
                 <div class="stat-list">
-                    <div class="stat-row"><span class="stat-name">STR</span><span class="stat-meta" id="h-str">0</span><button class="stat-add" id="btn-str" onclick="allocateStat('str')" disabled>+</button></div>
-                    <div class="stat-row"><span class="stat-name">AGI</span><span class="stat-meta" id="h-agi">0</span><button class="stat-add" id="btn-agi" onclick="allocateStat('agi')" disabled>+</button></div>
-                    <div class="stat-row"><span class="stat-name">VIT</span><span class="stat-meta" id="h-vit">0</span><button class="stat-add" id="btn-vit" onclick="allocateStat('vit')" disabled>+</button></div>
-                    <div class="stat-row"><span class="stat-name">DEX</span><span class="stat-meta" id="h-dex">0</span><button class="stat-add" id="btn-dex" onclick="allocateStat('dex')" disabled>+</button></div>
-                    <div class="stat-row"><span class="stat-name">WIS</span><span class="stat-meta" id="h-wis">0</span><button class="stat-add" id="btn-wis" onclick="allocateStat('wis')" disabled>+</button></div>
-                    <div class="stat-row"><span class="stat-name">LUK</span><span class="stat-meta" id="h-luk">0</span><button class="stat-add" id="btn-luk" onclick="allocateStat('luk')" disabled>+</button></div>
+                    <div class="stat-row">
+                        <div class="stat-main">
+                            <div class="stat-head"><span class="stat-name">STR</span><span class="stat-meta" id="h-str">0</span></div>
+                            <div class="stat-copy" data-i18n="stat_desc_str">근접 공격력 증가</div>
+                        </div>
+                        <button class="stat-add" id="btn-str" onclick="allocateStat('str')" disabled>+</button>
+                    </div>
+                    <div class="stat-row">
+                        <div class="stat-main">
+                            <div class="stat-head"><span class="stat-name">AGI</span><span class="stat-meta" id="h-agi">0</span></div>
+                            <div class="stat-copy" data-i18n="stat_desc_agi">이동 속도 증가</div>
+                        </div>
+                        <button class="stat-add" id="btn-agi" onclick="allocateStat('agi')" disabled>+</button>
+                    </div>
+                    <div class="stat-row">
+                        <div class="stat-main">
+                            <div class="stat-head"><span class="stat-name">VIT</span><span class="stat-meta" id="h-vit">0</span></div>
+                            <div class="stat-copy" data-i18n="stat_desc_vit">최대 체력 증가</div>
+                        </div>
+                        <button class="stat-add" id="btn-vit" onclick="allocateStat('vit')" disabled>+</button>
+                    </div>
+                    <div class="stat-row">
+                        <div class="stat-main">
+                            <div class="stat-head"><span class="stat-name">DEX</span><span class="stat-meta" id="h-dex">0</span></div>
+                            <div class="stat-copy" data-i18n="stat_desc_dex">현재 버전에서는 예약 스탯</div>
+                        </div>
+                        <button class="stat-add" id="btn-dex" onclick="allocateStat('dex')" disabled>+</button>
+                    </div>
+                    <div class="stat-row">
+                        <div class="stat-main">
+                            <div class="stat-head"><span class="stat-name">WIS</span><span class="stat-meta" id="h-wis">0</span></div>
+                            <div class="stat-copy" data-i18n="stat_desc_wis">XP·회복 효율 증가</div>
+                        </div>
+                        <button class="stat-add" id="btn-wis" onclick="allocateStat('wis')" disabled>+</button>
+                    </div>
+                    <div class="stat-row">
+                        <div class="stat-main">
+                            <div class="stat-head"><span class="stat-name">LUK</span><span class="stat-meta" id="h-luk">0</span></div>
+                            <div class="stat-copy" data-i18n="stat_desc_luk">치명타 확률·배율 증가</div>
+                        </div>
+                        <button class="stat-add" id="btn-luk" onclick="allocateStat('luk')" disabled>+</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1000,6 +1034,24 @@
                 stat_points: "{count} PT",
             }
         };
+
+        Object.assign(I18N.ko, {
+            stat_desc_str: "근접 공격력 증가",
+            stat_desc_agi: "이동 속도 증가",
+            stat_desc_vit: "최대 체력 증가",
+            stat_desc_dex: "현재 버전에서는 예약 스탯",
+            stat_desc_wis: "XP·회복 효율 증가",
+            stat_desc_luk: "치명타 확률·배율 증가",
+        });
+
+        Object.assign(I18N.en, {
+            stat_desc_str: "Raises melee damage.",
+            stat_desc_agi: "Raises move speed.",
+            stat_desc_vit: "Raises max HP.",
+            stat_desc_dex: "Reserved for a later combat stat.",
+            stat_desc_wis: "Raises XP and healing gain.",
+            stat_desc_luk: "Raises crit chance and crit damage.",
+        });
 
         let authMode = "login",
             currentLang = localStorage.getItem(LANG_KEY) === "en" ? "en" : "ko";
