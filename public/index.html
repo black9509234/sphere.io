@@ -1948,6 +1948,15 @@
             socket.emit("selectClass", { classKey }, res => {
                 classSelectionPending = false;
                 if (!res?.ok) {
+                    if (res?.error === "class_taken" && res.classKey) {
+                        currentSelf = {
+                            ...(currentSelf || {}),
+                            classKey: res.classKey,
+                            classUnlocked: true,
+                        };
+                        if (playerMap[myId]) playerMap[myId].classKey = res.classKey;
+                        if (renderPlayers[myId]) renderPlayers[myId].classKey = res.classKey;
+                    }
                     addChatLine(`<span class="ct">${escHtml(classErrorMessage(res?.error, { level: res?.unlockLevel || CLASS_UNLOCK_LEVEL }))}</span>`, "sys");
                     syncClassUi();
                     return;
