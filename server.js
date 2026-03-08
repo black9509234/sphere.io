@@ -1,6 +1,7 @@
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
+const { Pool } = require('pg');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
@@ -45,6 +46,8 @@ const SAVE_FILE = path.join(SAVE_DIR, 'profiles.json');
 const USER_FILE = path.join(SAVE_DIR, 'users.json');
 const SESSION_COOKIE = 'sphere_sid';
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7;
+const STORAGE_FLUSH_MS = 200;
+const DATABASE_URL = process.env.DATABASE_URL || '';
 
 const MONSTER_TYPES = [
   { type: 'dot', hp: 20, speed: 1.2, r: 6, xp: 8, color: '#ef4444', dmg: 5, atkR: 22, atkCD: 1500 },
@@ -167,27 +170,34 @@ if (!fs.existsSync(SAVE_DIR)) fs.mkdirSync(SAVE_DIR, { recursive: true });
 if (!fs.existsSync(SAVE_FILE)) fs.writeFileSync(SAVE_FILE, '{}', 'utf8');
 if (!fs.existsSync(USER_FILE)) fs.writeFileSync(USER_FILE, '{}', 'utf8');
 
-function loadProfiles() {
+function readJsonFile(filePath) {
   try {
-    return JSON.parse(fs.readFileSync(SAVE_FILE, 'utf8')) || {};
+    return JSON.parse(fs.readFileSync(filePath, 'utf8')) || {};
   } catch {
     return {};
   }
 }
 
-let savedProfiles = loadProfiles();
+function cloneProfile(profile) {
+  return profile ? JSON.parse(JSON.stringify(profile)) : null;
+}
+
+const usePostgres = !!DATABASE_URL;
+const pgPool = usePostgres ? new Pool({
+  connectionString: DATABASE_URL,
+  ssl: /localhost|127\.0\.0\.1/i.test(DATABASE_URL) || process.env.DATABASE_SSL === 'false'
+    ? undefined
+    : { rejectUnauthorized: false },
+}) : null;
+
+let savedProfiles = {};
+let savedUsers = {};
 let saveTimer = null;
 let userSaveTimer = null;
-
-function loadUsers() {
-  try {
-    return JSON.parse(fs.readFileSync(USER_FILE, 'utf8')) || {};
-  } catch {
-    return {};
-  }
-}
-
-let savedUsers = loadUsers();
+let profileFlushChain = Promise.resolve();
+let userFlushChain = Promise.resolve();
+const dirtyProfileKeys = new Set();
+const dirtyUserKeys = new Set();
 const sessions = new Map();
 const userSessions = new Map();
 
@@ -240,9 +250,9 @@ function persistUser(user, { immediate = false } = {}) {
     createdAt: user.createdAt || Date.now(),
     updatedAt: Date.now(),
   };
+  dirtyUserKeys.add(key);
   if (immediate) {
-    flushSaveUsersSync();
-    return;
+    return flushSaveUsers();
   }
   scheduleSaveUsers();
 }
@@ -302,38 +312,171 @@ function createSession(username) {
   return token;
 }
 
+async function initStorage() {
+  savedProfiles = {};
+  savedUsers = {};
+  const fileProfiles = readJsonFile(SAVE_FILE);
+  const fileUsers = readJsonFile(USER_FILE);
+
+  if (!usePostgres) {
+    savedProfiles = fileProfiles;
+    savedUsers = fileUsers;
+    return;
+  }
+
+  await pgPool.query(`
+    CREATE TABLE IF NOT EXISTS auth_users (
+      user_key TEXT PRIMARY KEY,
+      username TEXT UNIQUE NOT NULL,
+      password_salt TEXT NOT NULL,
+      password_hash TEXT NOT NULL,
+      created_at BIGINT NOT NULL,
+      updated_at BIGINT NOT NULL
+    )
+  `);
+  await pgPool.query(`
+    CREATE TABLE IF NOT EXISTS player_profiles (
+      user_key TEXT PRIMARY KEY,
+      profile JSONB NOT NULL,
+      updated_at BIGINT NOT NULL
+    )
+  `);
+
+  const [userRows, profileRows] = await Promise.all([
+    pgPool.query('SELECT user_key, username, password_salt, password_hash, created_at, updated_at FROM auth_users'),
+    pgPool.query('SELECT user_key, profile FROM player_profiles'),
+  ]);
+
+  for (const row of userRows.rows) {
+    savedUsers[row.user_key] = {
+      username: row.username,
+      passwordSalt: row.password_salt,
+      passwordHash: row.password_hash,
+      createdAt: Number(row.created_at) || Date.now(),
+      updatedAt: Number(row.updated_at) || Date.now(),
+    };
+  }
+
+  for (const row of profileRows.rows) {
+    savedProfiles[row.user_key] = row.profile || {};
+  }
+
+  for (const raw of Object.values(fileUsers)) {
+    if (!raw?.username) continue;
+    const userKey = playerNameKey(raw.username);
+    if (savedUsers[userKey]) continue;
+    savedUsers[userKey] = {
+      username: normalizePlayerName(raw.username),
+      passwordSalt: String(raw.passwordSalt || ''),
+      passwordHash: String(raw.passwordHash || ''),
+      createdAt: Number(raw.createdAt) || Date.now(),
+      updatedAt: Number(raw.updatedAt) || Date.now(),
+    };
+    if (savedUsers[userKey].passwordSalt && savedUsers[userKey].passwordHash) {
+      dirtyUserKeys.add(userKey);
+    } else {
+      delete savedUsers[userKey];
+    }
+  }
+
+  for (const raw of Object.values(fileProfiles)) {
+    if (!raw?.name) continue;
+    const userKey = playerNameKey(raw.name);
+    if (savedProfiles[userKey]) continue;
+    savedProfiles[userKey] = cloneProfile(raw);
+    dirtyProfileKeys.add(userKey);
+  }
+
+  await Promise.all([flushSaveUsers(), flushSaveProfiles()]);
+}
+
+async function writeProfilesToStorage(keys) {
+  if (!keys.length) return;
+  if (!usePostgres) {
+    await fs.promises.writeFile(SAVE_FILE, JSON.stringify(savedProfiles, null, 2), 'utf8');
+    return;
+  }
+  for (const userKey of keys) {
+    const profile = savedProfiles[userKey];
+    if (!profile) continue;
+    await pgPool.query(`
+      INSERT INTO player_profiles (user_key, profile, updated_at)
+      VALUES ($1, $2::jsonb, $3)
+      ON CONFLICT (user_key)
+      DO UPDATE SET profile = EXCLUDED.profile, updated_at = EXCLUDED.updated_at
+    `, [userKey, JSON.stringify(profile), Date.now()]);
+  }
+}
+
+async function writeUsersToStorage(keys) {
+  if (!keys.length) return;
+  if (!usePostgres) {
+    await fs.promises.writeFile(USER_FILE, JSON.stringify(savedUsers, null, 2), 'utf8');
+    return;
+  }
+  for (const userKey of keys) {
+    const user = savedUsers[userKey];
+    if (!user) continue;
+    await pgPool.query(`
+      INSERT INTO auth_users (user_key, username, password_salt, password_hash, created_at, updated_at)
+      VALUES ($1, $2, $3, $4, $5, $6)
+      ON CONFLICT (user_key)
+      DO UPDATE SET
+        username = EXCLUDED.username,
+        password_salt = EXCLUDED.password_salt,
+        password_hash = EXCLUDED.password_hash,
+        created_at = EXCLUDED.created_at,
+        updated_at = EXCLUDED.updated_at
+    `, [userKey, user.username, user.passwordSalt, user.passwordHash, user.createdAt || Date.now(), user.updatedAt || Date.now()]);
+  }
+}
+
 function scheduleSaveProfiles() {
   if (saveTimer) return;
   saveTimer = setTimeout(() => {
     saveTimer = null;
-    fs.writeFile(SAVE_FILE, JSON.stringify(savedProfiles, null, 2), () => {});
-  }, 200);
+    void flushSaveProfiles();
+  }, STORAGE_FLUSH_MS);
   if (typeof saveTimer.unref === 'function') saveTimer.unref();
 }
 
-function flushSaveProfilesSync() {
+function flushSaveProfiles() {
   if (saveTimer) {
     clearTimeout(saveTimer);
     saveTimer = null;
   }
-  fs.writeFileSync(SAVE_FILE, JSON.stringify(savedProfiles, null, 2), 'utf8');
+  const keys = Array.from(dirtyProfileKeys);
+  dirtyProfileKeys.clear();
+  if (!keys.length) return profileFlushChain;
+  profileFlushChain = profileFlushChain.then(() => writeProfilesToStorage(keys)).catch(err => {
+    console.error('[storage] profile flush failed', err);
+    for (const key of keys) dirtyProfileKeys.add(key);
+  });
+  return profileFlushChain;
 }
 
 function scheduleSaveUsers() {
   if (userSaveTimer) return;
   userSaveTimer = setTimeout(() => {
     userSaveTimer = null;
-    fs.writeFile(USER_FILE, JSON.stringify(savedUsers, null, 2), () => {});
-  }, 200);
+    void flushSaveUsers();
+  }, STORAGE_FLUSH_MS);
   if (typeof userSaveTimer.unref === 'function') userSaveTimer.unref();
 }
 
-function flushSaveUsersSync() {
+function flushSaveUsers() {
   if (userSaveTimer) {
     clearTimeout(userSaveTimer);
     userSaveTimer = null;
   }
-  fs.writeFileSync(USER_FILE, JSON.stringify(savedUsers, null, 2), 'utf8');
+  const keys = Array.from(dirtyUserKeys);
+  dirtyUserKeys.clear();
+  if (!keys.length) return userFlushChain;
+  userFlushChain = userFlushChain.then(() => writeUsersToStorage(keys)).catch(err => {
+    console.error('[storage] user flush failed', err);
+    for (const key of keys) dirtyUserKeys.add(key);
+  });
+  return userFlushChain;
 }
 
 function parseCookies(header = '') {
@@ -728,18 +871,17 @@ function serializePlayerProfile(p) {
 function readSavedProfile(name) {
   const normalized = normalizePlayerName(name);
   const key = playerNameKey(normalized);
-  return savedProfiles[key] || savedProfiles[normalized] || null;
+  return cloneProfile(savedProfiles[key] || savedProfiles[normalized] || null);
 }
 
 function persistPlayerProfile(p, { immediate = false } = {}) {
   const profile = serializePlayerProfile(p);
   const normalized = normalizePlayerName(p.name);
   const key = playerNameKey(normalized);
-  savedProfiles[key] = profile;
-  if (normalized !== key) savedProfiles[normalized] = profile;
+  savedProfiles[key] = cloneProfile(profile);
+  dirtyProfileKeys.add(key);
   if (immediate) {
-    flushSaveProfilesSync();
-    return;
+    return flushSaveProfiles();
   }
   scheduleSaveProfiles();
 }
@@ -753,7 +895,7 @@ app.get('/api/auth/session', (req, res) => {
   res.json({ ok: true, user: session.username });
 });
 
-app.post('/api/auth/register', (req, res) => {
+app.post('/api/auth/register', async (req, res) => {
   const userCheck = validateAuthName(req.body?.user);
   if (!userCheck.ok) return res.status(400).json({ ok: false, error: userCheck.error });
   const passwordCheck = validatePassword(req.body?.pass);
@@ -767,7 +909,7 @@ app.post('/api/auth/register', (req, res) => {
     passwordHash: passwordData.hash,
     createdAt: Date.now(),
   };
-  persistUser(user, { immediate: true });
+  await persistUser(user, { immediate: true });
 
   const token = createSession(user.username);
   setSessionCookie(req, res, token);
@@ -1437,20 +1579,17 @@ io.on('connection', socket => {
 
 for (const signal of ['SIGINT', 'SIGTERM']) {
   process.on(signal, () => {
-    try {
-      flushSaveProfilesSync();
-      flushSaveUsersSync();
-    } finally {
-      process.exit(0);
-    }
+    Promise.resolve()
+      .then(() => Promise.all([flushSaveProfiles(), flushSaveUsers()]))
+      .then(() => pgPool?.end())
+      .finally(() => process.exit(0));
   });
 }
 
-process.on('exit', () => {
-  try {
-    flushSaveProfilesSync();
-  } catch {}
-});
-
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`sphere.io @ http://localhost:${PORT}`));
+initStorage()
+  .then(() => server.listen(PORT, () => console.log(`sphere.io @ http://localhost:${PORT}`)))
+  .catch(err => {
+    console.error('[storage] init failed', err);
+    process.exit(1);
+  });
