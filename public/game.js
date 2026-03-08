@@ -617,8 +617,10 @@
                 activeWindowDrag = {
                     name,
                     element,
-                    offsetX: event.clientX - rect.left,
-                    offsetY: event.clientY - rect.top,
+                    startClientX: event.clientX,
+                    startClientY: event.clientY,
+                    startLeft: rect.left,
+                    startTop: rect.top,
                 };
                 element.classList.add("dragging-window");
                 document.documentElement.classList.add("ui-dragging");
@@ -636,8 +638,12 @@
 
         document.addEventListener("pointermove", event => {
             if (!activeWindowDrag) return;
-            const { name, element, offsetX, offsetY } = activeWindowDrag;
-            const pos = clampWindowPosition(element, event.clientX - offsetX, event.clientY - offsetY);
+            const { name, element, startClientX, startClientY, startLeft, startTop } = activeWindowDrag;
+            const pos = clampWindowPosition(
+                element,
+                startLeft + (event.clientX - startClientX),
+                startTop + (event.clientY - startClientY)
+            );
             element.style.left = `${pos.left}px`;
             element.style.top = `${pos.top}px`;
             element.style.right = "auto";
