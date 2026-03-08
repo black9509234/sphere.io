@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ko">
 
 <head>
@@ -611,7 +611,6 @@
             margin-top: 2px;
         }
 
-        #class-toggle,
         #inventory-toggle,
         #inventory-panel {
             border: 1px solid var(--border);
@@ -620,7 +619,6 @@
             box-shadow: 0 10px 24px rgba(18, 18, 18, .08);
         }
 
-        #class-toggle,
         #inventory-toggle {
             position: fixed;
             top: 48px;
@@ -634,173 +632,8 @@
             text-transform: uppercase;
         }
 
-        #class-toggle {
-            right: 118px;
-        }
-
         #inventory-toggle {
             right: 12px;
-        }
-
-        #class-screen {
-            position: fixed;
-            top: 84px;
-            right: 12px;
-            z-index: 22;
-            display: none;
-            width: min(340px, calc(100vw - 24px));
-        }
-
-        .class-box {
-            width: 100%;
-            max-height: calc(100vh - 108px);
-            padding: 10px;
-            overflow-y: auto;
-            border: 1px solid var(--border);
-            border-radius: 3px;
-            background: var(--panel);
-            backdrop-filter: blur(10px);
-            box-shadow: 0 10px 24px rgba(18, 18, 18, .08);
-        }
-
-        .class-sub {
-            margin-bottom: 14px;
-        }
-
-        .class-grid {
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 10px;
-        }
-
-        .class-card {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            padding: 14px;
-            border: 1px solid rgba(17, 17, 17, .1);
-            border-radius: 3px;
-            background: rgba(255, 255, 255, .82);
-            text-align: left;
-            transition: border-color .16s, transform .16s, box-shadow .16s;
-        }
-
-        .class-card:hover {
-            border-color: rgba(17, 17, 17, .2);
-            transform: translateY(-1px);
-            box-shadow: 0 12px 24px rgba(18, 18, 18, .08);
-        }
-
-        .class-card.chosen {
-            border-color: rgba(37, 99, 235, .34);
-            background: rgba(219, 234, 254, .55);
-            box-shadow: inset 0 0 0 1px rgba(37, 99, 235, .16);
-        }
-
-        .class-kicker {
-            color: var(--soft);
-            font: 10px var(--mono);
-            letter-spacing: .16em;
-            text-transform: uppercase;
-        }
-
-        .class-name {
-            font-size: 18px;
-            font-weight: 700;
-            text-transform: uppercase;
-        }
-
-        .class-copy {
-            min-height: 42px;
-            color: var(--muted);
-            font-size: 12px;
-            line-height: 1.5;
-        }
-
-        .class-preview {
-            position: relative;
-            width: 54px;
-            height: 54px;
-            margin-bottom: 2px;
-            border: 1px solid rgba(17, 17, 17, .08);
-            border-radius: 3px;
-            background: linear-gradient(180deg, rgba(255, 255, 255, .94), rgba(241, 241, 237, .92));
-        }
-
-        .class-preview::before,
-        .class-preview::after {
-            content: "";
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
-        }
-
-        .class-preview.preview-none::before {
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            background: #64748b;
-            border: 3px solid #ffffff;
-        }
-
-        .class-preview.preview-vanguard::before {
-            width: 20px;
-            height: 20px;
-            background: #1d4ed8;
-            border: 3px solid #ffffff;
-            transform: translate(-50%, -50%) rotate(45deg);
-        }
-
-        .class-preview.preview-ranger::before {
-            width: 0;
-            height: 0;
-            border-left: 14px solid transparent;
-            border-right: 14px solid transparent;
-            border-bottom: 24px solid #059669;
-            transform: translate(-50%, -58%);
-        }
-
-        .class-preview.preview-mystic::before {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: #7c3aed;
-            border: 3px solid #ffffff;
-        }
-
-        .class-preview.preview-mystic::after {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            border: 2px dashed rgba(124, 58, 237, .45);
-        }
-
-        .class-action {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 28px;
-            padding: 0 10px;
-            border: 1px solid rgba(17, 17, 17, .12);
-            border-radius: 2px;
-            background: rgba(17, 17, 17, .04);
-            color: var(--accent);
-            font: 700 10px var(--mono);
-            letter-spacing: .12em;
-            text-transform: uppercase;
-            appearance: none;
-            outline: none;
-        }
-
-        .class-action:focus-visible:not(:disabled) {
-            border-color: rgba(37, 99, 235, .34);
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, .14);
-        }
-
-        .class-action:disabled {
-            cursor: default;
-            opacity: .72;
         }
 
         #inventory-panel {
@@ -838,7 +671,6 @@
             align-items: center;
         }
 
-        #class-close,
         #inventory-close {
             min-width: 26px;
             height: 26px;
@@ -892,7 +724,6 @@
         #lang-btn {
             position: fixed;
             top: 12px;
-            right: 118px;
             z-index: 12;
             padding: 8px 10px;
             border: 1px solid rgba(17, 17, 17, .12);
@@ -1106,9 +937,6 @@
                 right: 112px;
                 top: 12px;
             }
-
-            #class-toggle {
-                right: 118px;
             }
 
             #controls-card {
@@ -1223,7 +1051,6 @@
                 <div class="hi-label" data-i18n="hud_player">PLAYER</div>
                 <div class="hi-value" id="h-user">guest</div>
                 <div class="hi-sub" data-i18n="hud_player_sub">connected pilot</div>
-                <div class="hi-sub" id="h-class">CLASS :: UNASSIGNED</div>
             </div>
             <div class="hud-chip">
                 <div class="hi-line"><span class="hi-label" data-i18n="hud_level">LEVEL</span><span class="hi-value">Lv.<span
@@ -1257,42 +1084,42 @@
                     <div class="stat-row">
                         <div class="stat-main">
                             <div class="stat-head"><span class="stat-name">STR</span><span class="stat-meta" id="h-str">0</span></div>
-                            <div class="stat-copy" data-i18n="stat_desc_str">근접 공격력 증가</div>
+                            <div class="stat-copy" data-i18n="stat_desc_str">洹쇱젒 怨듦꺽??利앷?</div>
                         </div>
                         <button class="stat-add" id="btn-str" onclick="allocateStat('str')" disabled>+</button>
                     </div>
                     <div class="stat-row">
                         <div class="stat-main">
                             <div class="stat-head"><span class="stat-name">AGI</span><span class="stat-meta" id="h-agi">0</span></div>
-                            <div class="stat-copy" data-i18n="stat_desc_agi">이동 속도 증가</div>
+                            <div class="stat-copy" data-i18n="stat_desc_agi">?대룞 ?띾룄 利앷?</div>
                         </div>
                         <button class="stat-add" id="btn-agi" onclick="allocateStat('agi')" disabled>+</button>
                     </div>
                     <div class="stat-row">
                         <div class="stat-main">
                             <div class="stat-head"><span class="stat-name">VIT</span><span class="stat-meta" id="h-vit">0</span></div>
-                            <div class="stat-copy" data-i18n="stat_desc_vit">최대 체력 증가</div>
+                            <div class="stat-copy" data-i18n="stat_desc_vit">理쒕? 泥대젰 利앷?</div>
                         </div>
                         <button class="stat-add" id="btn-vit" onclick="allocateStat('vit')" disabled>+</button>
                     </div>
                     <div class="stat-row">
                         <div class="stat-main">
                             <div class="stat-head"><span class="stat-name">DEX</span><span class="stat-meta" id="h-dex">0</span></div>
-                            <div class="stat-copy" data-i18n="stat_desc_dex">현재 버전에서는 예약 스탯</div>
+                            <div class="stat-copy" data-i18n="stat_desc_dex">?꾩옱 踰꾩쟾?먯꽌???덉빟 ?ㅽ꺈</div>
                         </div>
                         <button class="stat-add" id="btn-dex" onclick="allocateStat('dex')" disabled>+</button>
                     </div>
                     <div class="stat-row">
                         <div class="stat-main">
                             <div class="stat-head"><span class="stat-name">WIS</span><span class="stat-meta" id="h-wis">0</span></div>
-                            <div class="stat-copy" data-i18n="stat_desc_wis">XP·회복 효율 증가</div>
+                            <div class="stat-copy" data-i18n="stat_desc_wis">XP쨌?뚮났 ?⑥쑉 利앷?</div>
                         </div>
                         <button class="stat-add" id="btn-wis" onclick="allocateStat('wis')" disabled>+</button>
                     </div>
                     <div class="stat-row">
                         <div class="stat-main">
                             <div class="stat-head"><span class="stat-name">LUK</span><span class="stat-meta" id="h-luk">0</span></div>
-                            <div class="stat-copy" data-i18n="stat_desc_luk">치명타 확률·배율 증가</div>
+                            <div class="stat-copy" data-i18n="stat_desc_luk">移섎챸? ?뺣쪧쨌諛곗쑉 利앷?</div>
                         </div>
                         <button class="stat-add" id="btn-luk" onclick="allocateStat('luk')" disabled>+</button>
                     </div>
@@ -1301,26 +1128,7 @@
         </div>
         </div>
     </div>
-    <button id="class-toggle" onclick="toggleClassScreen()" data-i18n="btn_class">CLASS</button>
     <button id="inventory-toggle" onclick="toggleInventory()" data-i18n="btn_inventory">INVENTORY</button>
-    <div id="class-screen">
-        <div class="class-box">
-            <div class="inventory-head">
-                <div>
-                    <div class="chat-kicker" data-i18n="class_screen_kicker">CLASS</div>
-                    <div class="control-title" data-i18n="class_screen_title">SELECT CLASS</div>
-                </div>
-                <div style="display:flex; gap:6px;">
-                    <button class="panel-toggle" type="button" id="class-collapse" onclick="togglePanel('class')">-</button>
-                    <button id="class-close" onclick="toggleClassScreen(false)">X</button>
-                </div>
-            </div>
-            <div class="panel-body" id="class-body">
-                <div class="auth-sub class-sub" id="class-sub">Reach level 15 to unlock class selection.</div>
-                <div class="class-grid" id="class-options"></div>
-            </div>
-        </div>
-    </div>
     <div id="inventory-panel">
         <div class="inventory-head">
             <div>
@@ -1364,7 +1172,6 @@
                 <div class="control-row"><span data-i18n="controls_move">MOVE</span><span class="kbd">WASD</span></div>
                 <div class="control-row"><span data-i18n="controls_attack">ATTACK</span><span class="kbd">LMB</span></div>
                 <div class="control-row"><span data-i18n="controls_chat">CHAT</span><span class="kbd">ENTER</span></div>
-                <div class="control-row"><span data-i18n="controls_class">CLASS</span><span class="kbd">C / 1-3</span></div>
                 <div class="control-row"><span data-i18n="controls_inventory">INVENTORY</span><span class="kbd">E</span></div>
                 <div class="control-row"><span data-i18n="controls_close">CLOSE</span><span class="kbd">ESC</span></div>
             </div>
@@ -1394,7 +1201,7 @@
             getDB = () => { try { return JSON.parse(localStorage.getItem(UKEY)) || {} } catch { return {} } },
             saveDB = db => localStorage.setItem(UKEY, JSON.stringify(db));
 
-        const I18N = {
+                const I18N = {
             ko: {
                 auth_titlebar: "SPHERE.IO // 접속 노드",
                 auth_kicker: "월드 접속",
@@ -1443,15 +1250,51 @@
                 auth_ok_connecting: "OK :: {user}(으)로 접속 중",
                 auth_info_disconnected: "INFO :: 연결이 종료되었습니다",
                 sys_link_established: "연결 완료 :: 이동=WASD :: 공격=좌클릭 :: 채팅=ENTER",
-                sys_respawned: "노드 종료 :: 안전 지점에서 부활했습니다",
+                sys_respawned: "리스폰 완료 :: 안전 지점에서 부활했습니다",
                 sys_target_down: "타겟 격파 :: +{xp} XP",
                 sys_no_points: "사용 가능한 스탯 포인트가 없습니다",
                 sys_stat_applied: "{stat} +1 적용",
                 sys_level_points: "레벨 업 :: +{points} 스탯 포인트 :: 총 {total}",
                 sys_level_broadcast: "레벨 {level}",
-                sys_session_replaced: "다른 접속으로 인해 현재 세션이 종료되었습니다",
+                sys_session_replaced: "다른 로그인으로 인해 현재 세션이 종료되었습니다",
                 flash_level_up: "레벨 {level} 상승",
                 stat_points: "{count} PT",
+                stat_desc_str: "근접 공격력 증가",
+                stat_desc_agi: "이동 속도와 회피 확률 증가",
+                stat_desc_vit: "최대 체력 증가",
+                stat_desc_dex: "공격 속도와 사거리 증가",
+                stat_desc_wis: "XP와 회복 효율 증가",
+                stat_desc_luk: "치명타 확률과 배율 증가",
+                combat_evade: "회피",
+                portal_label: "차원 포탈",
+                portal_state: "비활성",
+                map_field: "기본 구역",
+                map_mono: "흑백 구역",
+                portal_hint: "{map} 이동",
+                sys_map_changed: "포탈 이동 :: {map}",
+                hud_gear: "장비",
+                hud_equipped: "장착",
+                hud_inventory: "인벤토리",
+                hud_penalty: "사망 시 XP, 스탯 포인트 1, 장비 1개를 잃을 수 있습니다.",
+                hud_loot_count: "개인 드랍 {count}",
+                inventory_count: "{count} / {limit}",
+                inventory_empty: "획득한 장비가 없습니다.",
+                equipment_empty: "비어 있음",
+                btn_inventory: "인벤토리",
+                btn_equip: "장착",
+                btn_unequip: "해제",
+                controls_inventory: "인벤토리",
+                sys_loot_drop: "드랍 생성 :: {item}",
+                sys_loot_pick: "획득 완료 :: {item}",
+                sys_equip: "장착 완료 :: {item}",
+                sys_unequip: "해제 완료 :: {item}",
+                sys_inventory_full: "인벤토리가 가득 차서 더 주울 수 없습니다.",
+                sys_death_penalty: "사망 패널티 :: XP -{xp} :: PT -{points} :: {item}",
+                sys_death_penalty_no_item: "잃은 장비 없음",
+                sys_equip_error_not_joined: "장착 실패 :: 캐릭터가 연결되지 않았습니다.",
+                sys_equip_error_item_missing: "장착 실패 :: 인벤토리에서 아이템을 찾지 못했습니다.",
+                sys_equip_error_bad_slot: "해제 실패 :: 잘못된 슬롯입니다.",
+                sys_equip_error_slot_empty: "해제 실패 :: 슬롯이 비어 있습니다.",
             },
             en: {
                 auth_titlebar: "SPHERE.IO // ACCESS NODE",
@@ -1510,148 +1353,44 @@
                 sys_session_replaced: "This session was replaced by another login",
                 flash_level_up: "LEVEL {level} UP",
                 stat_points: "{count} PT",
+                stat_desc_str: "Raises melee damage.",
+                stat_desc_agi: "Raises move speed and dodge chance.",
+                stat_desc_vit: "Raises max HP.",
+                stat_desc_dex: "Raises attack speed and melee reach.",
+                stat_desc_wis: "Raises XP gain and healing.",
+                stat_desc_luk: "Raises crit chance and crit multiplier.",
+                combat_evade: "EVADE",
+                portal_label: "DIMENSION PORTAL",
+                portal_state: "INACTIVE",
+                map_field: "FIELD",
+                map_mono: "MONO ZONE",
+                portal_hint: "TO {map}",
+                sys_map_changed: "PORTAL SHIFT :: {map}",
+                hud_gear: "GEAR",
+                hud_equipped: "EQUIPPED",
+                hud_inventory: "INVENTORY",
+                hud_penalty: "Death can cost XP, one spare stat point, and one owned item.",
+                hud_loot_count: "private drops {count}",
+                inventory_count: "{count} / {limit}",
+                inventory_empty: "No gear collected yet.",
+                equipment_empty: "Empty",
+                btn_inventory: "INVENTORY",
+                btn_equip: "EQUIP",
+                btn_unequip: "UNEQUIP",
+                controls_inventory: "INVENTORY",
+                sys_loot_drop: "DROP SPAWNED :: {item}",
+                sys_loot_pick: "LOOT SECURED :: {item}",
+                sys_equip: "EQUIPPED :: {item}",
+                sys_unequip: "UNEQUIPPED :: {item}",
+                sys_inventory_full: "Inventory full. Make room before picking up more gear.",
+                sys_death_penalty: "DEATH PENALTY :: XP -{xp} :: PT -{points} :: {item}",
+                sys_death_penalty_no_item: "no item lost",
+                sys_equip_error_not_joined: "EQUIP FAILED :: character is not connected.",
+                sys_equip_error_item_missing: "EQUIP FAILED :: item not found in inventory.",
+                sys_equip_error_bad_slot: "UNEQUIP FAILED :: invalid slot.",
+                sys_equip_error_slot_empty: "UNEQUIP FAILED :: slot is empty.",
             }
         };
-
-        Object.assign(I18N.ko, {
-            stat_desc_str: "근접 공격력 증가",
-            stat_desc_agi: "이동 속도 증가",
-            stat_desc_vit: "최대 체력 증가",
-            stat_desc_dex: "현재 버전에서는 예약 스탯",
-            stat_desc_wis: "XP·회복 효율 증가",
-            stat_desc_luk: "치명타 확률·배율 증가",
-        });
-
-        Object.assign(I18N.en, {
-            stat_desc_str: "Raises melee damage.",
-            stat_desc_agi: "Raises move speed.",
-            stat_desc_vit: "Raises max HP.",
-            stat_desc_dex: "Reserved for a later combat stat.",
-            stat_desc_wis: "Raises XP and healing gain.",
-            stat_desc_luk: "Raises crit chance and crit damage.",
-        });
-
-        Object.assign(I18N.ko, {
-            stat_desc_agi: "이동 속도·회피율 증가",
-            stat_desc_dex: "공격 속도·사거리 증가",
-            combat_evade: "회피",
-        });
-
-        Object.assign(I18N.en, {
-            stat_desc_agi: "Raises move speed and dodge chance.",
-            stat_desc_dex: "Raises attack speed and melee reach.",
-            combat_evade: "EVADE",
-        });
-
-        Object.assign(I18N.ko, {
-            btn_class: "직업군",
-            hud_class_value: "직업군 :: {name}",
-            class_unassigned: "미선택",
-            class_screen_kicker: "클래스",
-            class_screen_title: "직업군 선택",
-            class_screen_sub_locked: "레벨 {level}부터 직업군을 선택할 수 있습니다.",
-            class_screen_sub_ready: "직업군은 한 번만 선택할 수 있습니다.",
-            class_screen_sub_chosen: "현재 직업군 :: {name}",
-            class_pick: "선택",
-            class_selected_state: "선택됨",
-            controls_class: "직업군",
-            sys_class_unlock: "클래스 해금 :: 직업군을 선택할 수 있습니다",
-            sys_class_selected: "직업군 선택 :: {name}",
-            sys_class_error_class_locked: "직업군 잠금 :: 레벨 {level}부터 가능합니다",
-            sys_class_error_class_taken: "직업군 선택 실패 :: 이미 선택했습니다",
-            sys_class_error_bad_class: "직업군 선택 실패 :: 지원되지 않는 직업군입니다",
-            sys_class_error_not_joined: "직업군 선택 실패 :: 캐릭터가 연결되지 않았습니다",
-            portal_label: "차원 포탈",
-            portal_state: "비활성",
-        });
-
-        Object.assign(I18N.en, {
-            btn_class: "CLASS",
-            hud_class_value: "CLASS :: {name}",
-            class_unassigned: "UNASSIGNED",
-            class_screen_kicker: "CLASS",
-            class_screen_title: "SELECT CLASS",
-            class_screen_sub_locked: "Class selection unlocks at level {level}.",
-            class_screen_sub_ready: "Class choice is permanent for this character.",
-            class_screen_sub_chosen: "CURRENT CLASS :: {name}",
-            class_pick: "SELECT",
-            class_selected_state: "SELECTED",
-            controls_class: "CLASS",
-            sys_class_unlock: "CLASS UNLOCKED :: choose your role",
-            sys_class_selected: "CLASS SELECTED :: {name}",
-            sys_class_error_class_locked: "CLASS LOCKED :: available at level {level}",
-            sys_class_error_class_taken: "CLASS SELECTION FAILED :: already chosen",
-            sys_class_error_bad_class: "CLASS SELECTION FAILED :: unsupported class",
-            sys_class_error_not_joined: "CLASS SELECTION FAILED :: character is not connected",
-            portal_label: "DIMENSION PORTAL",
-            portal_state: "INACTIVE",
-        });
-
-        Object.assign(I18N.ko, {
-            map_field: "기본 구역",
-            map_mono: "흑백 구역",
-            portal_hint: "{map} 이동",
-            sys_map_changed: "포탈 이동 :: {map}",
-        });
-
-        Object.assign(I18N.en, {
-            map_field: "FIELD",
-            map_mono: "MONO ZONE",
-            portal_hint: "TO {map}",
-            sys_map_changed: "PORTAL SHIFT :: {map}",
-        });
-
-        Object.assign(I18N.ko, {
-            hud_gear: "장비",
-            hud_equipped: "장착",
-            hud_inventory: "인벤토리",
-            hud_penalty: "사망 시 XP, 남은 스탯 포인트, 보유 장비 1개를 잃을 수 있습니다.",
-            hud_loot_count: "개인 드랍 {count}",
-            inventory_count: "{count} / {limit}",
-            inventory_empty: "획득한 장비가 없습니다.",
-            equipment_empty: "비어 있음",
-            btn_inventory: "인벤토리",
-            btn_equip: "장착",
-            btn_unequip: "해제",
-            controls_inventory: "장비창",
-            sys_loot_drop: "드랍 생성 :: {item}",
-            sys_loot_pick: "획득 완료 :: {item}",
-            sys_equip: "장착 완료 :: {item}",
-            sys_unequip: "해제 완료 :: {item}",
-            sys_inventory_full: "인벤토리가 가득 차서 더 주울 수 없습니다.",
-            sys_death_penalty: "사망 페널티 :: XP -{xp} :: PT -{points} :: {item}",
-            sys_death_penalty_no_item: "장비 손실 없음",
-            sys_equip_error_not_joined: "장착 실패 :: 캐릭터 연결이 끊어졌습니다.",
-            sys_equip_error_item_missing: "장착 실패 :: 해당 아이템을 인벤토리에서 찾지 못했습니다.",
-            sys_equip_error_bad_slot: "장착 실패 :: 잘못된 슬롯입니다.",
-            sys_equip_error_slot_empty: "해제 실패 :: 해당 슬롯이 비어 있습니다.",
-        });
-
-        Object.assign(I18N.en, {
-            hud_gear: "GEAR",
-            hud_equipped: "EQUIPPED",
-            hud_inventory: "INVENTORY",
-            hud_penalty: "Death can cost XP, one spare stat point, and one owned item.",
-            hud_loot_count: "private drops {count}",
-            inventory_count: "{count} / {limit}",
-            inventory_empty: "No gear collected yet.",
-            equipment_empty: "Empty",
-            btn_inventory: "INVENTORY",
-            btn_equip: "EQUIP",
-            btn_unequip: "UNEQUIP",
-            controls_inventory: "INVENTORY",
-            sys_loot_drop: "DROP SPAWNED :: {item}",
-            sys_loot_pick: "LOOT SECURED :: {item}",
-            sys_equip: "EQUIPPED :: {item}",
-            sys_unequip: "UNEQUIPPED :: {item}",
-            sys_inventory_full: "Inventory full. Make room before picking up more gear.",
-            sys_death_penalty: "DEATH PENALTY :: XP -{xp} :: PT -{points} :: {item}",
-            sys_death_penalty_no_item: "no item lost",
-            sys_equip_error_not_joined: "EQUIP FAILED :: character is not connected.",
-            sys_equip_error_item_missing: "EQUIP FAILED :: item not found in inventory.",
-            sys_equip_error_bad_slot: "UNEQUIP FAILED :: invalid slot.",
-            sys_equip_error_slot_empty: "UNEQUIP FAILED :: slot is empty.",
-        });
 
         const SLOT_ORDER = ["weapon", "armor", "boots", "gloves", "charm"];
         const SLOT_META = {
@@ -1662,29 +1401,13 @@
             charm: { ko: "부적", en: "CHARM" },
         };
         const ITEM_META = {
-            iron_blade: { ko: "철검", en: "Iron Blade" },
-            guard_armor: { ko: "가드 아머", en: "Guard Armor" },
-            wind_boots: { ko: "윈드 부츠", en: "Wind Boots" },
-            focus_gloves: { ko: "포커스 글러브", en: "Focus Gloves" },
-            lucky_charm: { ko: "행운 부적", en: "Lucky Charm" },
+            iron_blade: { ko: "검", en: "Sword" },
+            guard_armor: { ko: "갑옷", en: "Armor" },
+            wind_boots: { ko: "신발", en: "Boots" },
+            focus_gloves: { ko: "장갑", en: "Gloves" },
+            lucky_charm: { ko: "부적", en: "Charm" },
         };
 
-        const CLASS_UNLOCK_LEVEL = 15;
-        const CLASS_ORDER = ["vanguard", "ranger", "mystic"];
-        const CLASS_META = {
-            vanguard: {
-                ko: { name: "선봉", desc: "정면 돌파와 생존을 맡는 전위 직업군." },
-                en: { name: "VANGUARD", desc: "Frontline class for direct engagement and staying power." },
-            },
-            ranger: {
-                ko: { name: "레인저", desc: "기동과 정밀 타격에 집중한 추적형 직업군." },
-                en: { name: "RANGER", desc: "Mobile hunter class focused on pressure and precision." },
-            },
-            mystic: {
-                ko: { name: "미스틱", desc: "보조와 제어에 특화된 후방 직업군." },
-                en: { name: "MYSTIC", desc: "Support-oriented class built around control and utility." },
-            },
-        };
         const MAP_META = {
             field: {
                 nameKey: "map_field",
@@ -1718,7 +1441,6 @@
 
         const elMsg = document.getElementById("auth-msg"),
             elUser = document.getElementById("h-user"),
-            elClass = document.getElementById("h-class"),
             elPos = document.getElementById("h-pos"),
             elCnt = document.getElementById("h-cnt"),
             elLv = document.getElementById("h-lv"),
@@ -1744,12 +1466,7 @@
             elInvCnt = document.getElementById("h-invcount"),
             equipList = document.getElementById("equip-list"),
             inventoryList = document.getElementById("inventory-list"),
-            classToggleBtn = document.getElementById("class-toggle"),
-            classScreen = document.getElementById("class-screen"),
-            classSub = document.getElementById("class-sub"),
-            classOptions = document.getElementById("class-options"),
             hudBody = document.getElementById("hud-body"),
-            classBody = document.getElementById("class-body"),
             inventoryBody = document.getElementById("inventory-body"),
             controlsBody = document.getElementById("controls-body"),
             chatBody = document.getElementById("chat-body"),
@@ -1762,21 +1479,18 @@
             levelupFlash = document.getElementById("levelup-flash");
         const panelBodies = {
             hud: hudBody,
-            class: classBody,
             inventory: inventoryBody,
             controls: controlsBody,
             chat: chatBody,
         };
         const panelShells = {
             hud: document.getElementById("hud"),
-            class: document.querySelector("#class-screen .class-box"),
             inventory: document.getElementById("inventory-panel"),
             controls: document.getElementById("controls-card"),
             chat: document.getElementById("chat-wrap"),
         };
         const panelButtons = {
             hud: document.getElementById("hud-toggle"),
-            class: document.getElementById("class-collapse"),
             inventory: document.getElementById("inventory-collapse"),
             controls: document.getElementById("controls-toggle"),
             chat: document.getElementById("chat-toggle"),
@@ -1790,10 +1504,6 @@
             }
         };
         let panelState = loadPanelState();
-
-        function classInfo(classKey) {
-            return CLASS_META[classKey]?.[currentLang] || CLASS_META[classKey]?.en || null;
-        }
 
         function currentMapId() {
             return currentSelf?.mapId || playerMap[myId]?.mapId || "field";
@@ -1843,146 +1553,6 @@
             return { x: worldW - DECOR_PORTAL_OFFSET_X, y: worldH / 2, targetMapId: "mono" };
         }
 
-        function className(classKey) {
-            return classInfo(classKey)?.name || t("class_unassigned");
-        }
-
-        function classDescription(classKey) {
-            return classInfo(classKey)?.desc || "";
-        }
-
-        function currentClassKey() {
-            return currentSelf?.classKey || playerMap[myId]?.classKey || null;
-        }
-
-        function classUnlocked() {
-            return !!currentSelf?.classUnlocked || !!currentClassKey() || (playerMap[myId]?.level || 0) >= CLASS_UNLOCK_LEVEL;
-        }
-
-        function classErrorMessage(code, extra = {}) {
-            const key = `sys_class_error_${code || "bad_class"}`;
-            return t(key, extra) === key ? String(code || "bad_class") : t(key, extra);
-        }
-
-        function renderClassOptions() {
-            if (!classOptions) return;
-            const selectedClass = currentClassKey();
-            classOptions.innerHTML = "";
-            for (const [index, classKey] of CLASS_ORDER.entries()) {
-                const card = document.createElement("div");
-                card.className = "class-card" + (selectedClass === classKey ? " chosen" : "");
-
-                const kicker = document.createElement("div");
-                kicker.className = "class-kicker";
-                kicker.textContent = t("class_screen_kicker");
-
-                const previewNode = document.createElement("div");
-                previewNode.className = `class-preview preview-${classKey || "none"}`;
-
-                const nameNode = document.createElement("div");
-                nameNode.className = "class-name";
-                nameNode.textContent = className(classKey);
-
-                const copyNode = document.createElement("div");
-                copyNode.className = "class-copy";
-                copyNode.textContent = classDescription(classKey);
-
-                const actionNode = document.createElement("button");
-                actionNode.type = "button";
-                actionNode.className = "class-action";
-                actionNode.disabled = classSelectionPending || !!selectedClass;
-                actionNode.textContent = selectedClass === classKey ? t("class_selected_state") : `${index + 1}. ${t("class_pick")}`;
-                if (!selectedClass) actionNode.addEventListener("click", () => selectClass(classKey));
-
-                card.appendChild(kicker);
-                card.appendChild(previewNode);
-                card.appendChild(nameNode);
-                card.appendChild(copyNode);
-                card.appendChild(actionNode);
-                classOptions.appendChild(card);
-            }
-        }
-
-        function syncClassUi() {
-            const unlocked = gameRunning && classUnlocked();
-            const selectedClass = currentClassKey();
-            elClass.textContent = t("hud_class_value", { name: className(selectedClass) });
-            classToggleBtn.style.display = unlocked ? "block" : "none";
-            classToggleBtn.textContent = t("btn_class");
-            if (!unlocked) {
-                classSub.textContent = t("class_screen_sub_locked", { level: CLASS_UNLOCK_LEVEL });
-            } else if (selectedClass) {
-                classSub.textContent = t("class_screen_sub_chosen", { name: className(selectedClass) });
-            } else if (lastClassAttemptError) {
-                classSub.textContent = lastClassAttemptError;
-            } else {
-                classSub.textContent = t("class_screen_sub_ready", { level: CLASS_UNLOCK_LEVEL });
-            }
-            renderClassOptions();
-            if (!unlocked && classScreenOpen) toggleClassScreen(false);
-            if (unlocked && !selectedClass && !classPrompted) {
-                classPrompted = true;
-                addChatLine(`<span class="ct">${escHtml(t("sys_class_unlock"))}</span>`, "lvlup");
-                toggleClassScreen(true);
-            }
-        }
-
-        function toggleClassScreen(force) {
-            const next = typeof force === "boolean" ? force : !classScreenOpen;
-            if (next && !gameRunning) return;
-            if (next && !classUnlocked()) return;
-            if (next) toggleInventory(false);
-            classScreenOpen = next;
-            classScreen.style.display = classScreenOpen ? "block" : "none";
-            if (classScreenOpen) {
-                renderClassOptions();
-                setPanelCollapsed("class", false, { persist: false });
-            }
-        }
-
-        function selectClassByIndex(index) {
-            if (!gameRunning || chatFocused() || !classUnlocked() || currentClassKey()) return false;
-            const classKey = CLASS_ORDER[index];
-            if (!classKey) return false;
-            if (!classScreenOpen) toggleClassScreen(true);
-            selectClass(classKey);
-            return true;
-        }
-
-        function selectClass(classKey) {
-            const blockedReason = !socket ? "no_socket" : classSelectionPending ? "pending" : currentClassKey() ? "already_selected" : "";
-            console.log("[class/select] click", { classKey, blockedReason, classSelectionPending, currentClassKey: currentClassKey(), currentSelf, me: playerMap[myId] || null });
-            if (blockedReason) return;
-            lastClassAttemptError = "";
-            classSelectionPending = true;
-            renderClassOptions();
-            socket.emit("selectClass", { classKey }, res => {
-                classSelectionPending = false;
-                console.log("[class/select] ack", res);
-                if (!res?.ok) {
-                    lastClassAttemptError = classErrorMessage(res?.error, { level: res?.unlockLevel || CLASS_UNLOCK_LEVEL });
-                    if (res?.error === "class_taken" && res.classKey) {
-                        currentSelf = {
-                            ...(currentSelf || {}),
-                            classKey: res.classKey,
-                            classUnlocked: true,
-                        };
-                        if (playerMap[myId]) playerMap[myId].classKey = res.classKey;
-                        if (renderPlayers[myId]) renderPlayers[myId].classKey = res.classKey;
-                    }
-                    addChatLine(`<span class="ct">${escHtml(lastClassAttemptError)}</span>`, "sys");
-                    syncClassUi();
-                    return;
-                }
-                lastClassAttemptError = "";
-                if (playerMap[myId]) playerMap[myId].classKey = res.classKey;
-                if (renderPlayers[myId]) renderPlayers[myId].classKey = res.classKey;
-                applySelfState(res.self || currentSelf);
-                addChatLine(`<span class="ct">${escHtml(t("sys_class_selected", { name: className(res.classKey) }))}</span>`, "lvlup");
-                toggleClassScreen(false);
-            });
-        }
-
         function renderStaticI18n() {
             document.documentElement.lang = currentLang;
             document.querySelectorAll("[data-i18n]").forEach(node => {
@@ -1995,7 +1565,6 @@
             elStatPts.textContent = t("stat_points", { count: Number.parseInt(elStatPts.textContent, 10) || 0 });
             langBtn.textContent = currentLang === "ko" ? "EN" : "KO";
             renderLoadout(true);
-            syncClassUi();
         }
 
         function toggleLanguage() {
@@ -2079,9 +1648,6 @@
 
         resize();
         addEventListener("resize", resize);
-        classScreen.addEventListener("mousedown", e => {
-            if (e.target === classScreen) toggleClassScreen(false);
-        });
 
         let socket,
             myId = null,
@@ -2099,10 +1665,6 @@
         let lastKeys = {},
             gameRunning = false,
             inventoryOpen = false,
-            classScreenOpen = false,
-            lastClassAttemptError = "",
-            classPrompted = false,
-            classSelectionPending = false,
             lastLoadoutSignature = "",
             rafId = null,
             attackCooldown = false;
@@ -2111,31 +1673,13 @@
         Object.keys(panelBodies).forEach(applyPanelState);
 
         addEventListener("keydown", e => {
-            if (!chatFocused() && ["1", "2", "3"].includes(e.key)) {
-                if (selectClassByIndex(Number(e.key) - 1)) {
-                    e.preventDefault();
-                    return;
-                }
-            }
             if ((e.key === "e" || e.key === "E") && gameRunning && !chatFocused()) {
                 toggleInventory();
                 e.preventDefault();
                 return;
             }
-            if (e.key === "c" || e.key === "C") {
-                if (gameRunning && classUnlocked() && !chatFocused()) {
-                    toggleClassScreen();
-                    e.preventDefault();
-                }
-                return;
-            }
             if (e.key === "Escape" && inventoryOpen) {
                 toggleInventory(false);
-                e.preventDefault();
-                return;
-            }
-            if (e.key === "Escape" && classScreenOpen) {
-                toggleClassScreen(false);
                 e.preventDefault();
                 return;
             }
@@ -2194,12 +1738,20 @@
             return player?.atkCd ?? 620;
         }
 
+        const SIMPLE_ITEM_LABELS = {
+            iron_blade: { ko: "검", en: "Sword" },
+            guard_armor: { ko: "갑옷", en: "Armor" },
+            wind_boots: { ko: "신발", en: "Boots" },
+            focus_gloves: { ko: "장갑", en: "Gloves" },
+            lucky_charm: { ko: "부적", en: "Charm" },
+        };
+
         function slotLabel(slot) {
             return SLOT_META[slot]?.[currentLang] || slot.toUpperCase();
         }
 
         function itemLabel(item) {
-            return ITEM_META[item?.key]?.[currentLang] || item?.key || "UNKNOWN";
+            return SIMPLE_ITEM_LABELS[item?.key]?.[currentLang] || ITEM_META[item?.key]?.[currentLang] || item?.key || "UNKNOWN";
         }
 
         function gearRowClass(item) {
@@ -2215,7 +1767,6 @@
 
         function toggleInventory(force) {
             inventoryOpen = typeof force === "boolean" ? force : !inventoryOpen;
-            if (inventoryOpen) toggleClassScreen(false);
             inventoryPanel.style.display = inventoryOpen && gameRunning ? "block" : "none";
             if (inventoryOpen) setPanelCollapsed("inventory", false, { persist: false });
         }
@@ -2341,7 +1892,6 @@
                 if (self.stats) me.stats = { ...self.stats };
                 if (typeof self.atkRange === "number") me.atkRange = self.atkRange;
                 if (typeof self.atkCd === "number") me.atkCd = self.atkCd;
-                if (self.classKey) me.classKey = self.classKey;
                 if (self.mapId) me.mapId = self.mapId;
             }
             if (renderMe && self) {
@@ -2349,11 +1899,9 @@
                 if (typeof self.hp === "number") renderMe.hp = self.hp;
                 if (typeof self.maxHp === "number") renderMe.maxHp = self.maxHp;
                 if (typeof self.atkRange === "number") renderMe.atkRange = self.atkRange;
-                if (self.classKey) renderMe.classKey = self.classKey;
                 if (self.mapId) renderMe.mapId = self.mapId;
             }
             renderLoadout();
-            syncClassUi();
         }
 
         function tryAttackAt(clientX, clientY) {
@@ -2661,9 +2209,6 @@
             keys.up = keys.down = keys.left = keys.right = false;
             lastKeys = {};
             attackCooldown = false;
-            classScreenOpen = false;
-            classPrompted = false;
-            classSelectionPending = false;
             myId = null;
             playerMap = {};
             orbMap = {};
@@ -2681,8 +2226,6 @@
             }
             document.getElementById("hud").style.display = "none";
             document.getElementById("logout-btn").style.display = "none";
-            classToggleBtn.style.display = "none";
-            classScreen.style.display = "none";
             inventoryToggleBtn.style.display = "none";
             inventoryPanel.style.display = "none";
             document.getElementById("chat-wrap").style.display = "none";
@@ -2693,7 +2236,6 @@
             chatLog.innerHTML = "";
             levelupFlash.classList.remove("show");
             elHpFill.style.background = "linear-gradient(90deg,rgba(248,113,113,.4),#dc2626)";
-            elClass.textContent = t("hud_class_value", { name: t("class_unassigned") });
             elStatPts.textContent = t("stat_points", { count: 0 });
             elStr.textContent = "0";
             elAgi.textContent = "0";
@@ -3060,11 +2602,7 @@
         }
 
         function drawPlayerBody(player, isMe, sx, sy) {
-            const classKey = player.classKey || null;
-            const fill = classKey === "vanguard" ? (isMe ? "#1d4ed8" : "#64748b")
-                : classKey === "ranger" ? (isMe ? "#059669" : "#64748b")
-                    : classKey === "mystic" ? (isMe ? "#7c3aed" : "#64748b")
-                        : (isMe ? C.player : C.playerOther);
+            const fill = isMe ? C.player : C.playerOther;
             const stroke = isMe ? C.playerStroke : "#e2e8f0";
 
             ctx.save();
@@ -3072,37 +2610,10 @@
             ctx.fillStyle = fill;
             ctx.strokeStyle = stroke;
             ctx.lineWidth = isMe ? 3 : 2.5;
-
-            if (classKey === "vanguard") {
-                ctx.rotate(Math.PI / 4);
-                ctx.fillRect(-player.r * .82, -player.r * .82, player.r * 1.64, player.r * 1.64);
-                ctx.strokeRect(-player.r * .82, -player.r * .82, player.r * 1.64, player.r * 1.64);
-            } else if (classKey === "ranger") {
-                ctx.beginPath();
-                ctx.moveTo(0, -player.r);
-                ctx.lineTo(player.r * .88, player.r * .84);
-                ctx.lineTo(-player.r * .88, player.r * .84);
-                ctx.closePath();
-                ctx.fill();
-                ctx.stroke();
-            } else if (classKey === "mystic") {
-                ctx.beginPath();
-                ctx.arc(0, 0, player.r * .82, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.stroke();
-                ctx.beginPath();
-                ctx.arc(0, 0, player.r + 4, 0, Math.PI * 2);
-                ctx.strokeStyle = isMe ? "rgba(124,58,237,.42)" : "rgba(100,116,139,.3)";
-                ctx.lineWidth = 2;
-                ctx.setLineDash([5, 4]);
-                ctx.stroke();
-                ctx.setLineDash([]);
-            } else {
-                ctx.beginPath();
-                ctx.arc(0, 0, player.r, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.stroke();
-            }
+            ctx.beginPath();
+            ctx.arc(0, 0, player.r, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
 
             ctx.restore();
         }
@@ -3122,13 +2633,6 @@
                 ctx.setLineDash([]);
             }
             drawPlayerBody(player, isMe, sx, sy);
-            if (isMe) {
-                ctx.beginPath();
-                ctx.arc(sx, sy, player.r + 6, 0, Math.PI * 2);
-                ctx.strokeStyle = "rgba(0,0,0,.18)";
-                ctx.lineWidth = 2;
-                ctx.stroke();
-            }
             ctx.restore();
 
             drawPill(player.name, sx, sy - player.r - 28);
@@ -3195,3 +2699,5 @@
 </body>
 
 </html>
+
+

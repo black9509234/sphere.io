@@ -48,12 +48,6 @@ const MONSTER_TYPES = [
 
 const DEFAULT_STATS = Object.freeze({ str: 0, agi: 0, vit: 0, dex: 0, wis: 0, luk: 0 });
 const EQUIP_SLOTS = Object.freeze(['weapon', 'armor', 'boots', 'gloves', 'charm']);
-const CLASS_UNLOCK_LEVEL = 15;
-const CLASS_DEFS = Object.freeze({
-  vanguard: { key: 'vanguard' },
-  ranger: { key: 'ranger' },
-  mystic: { key: 'mystic' },
-});
 const MAP_DEFS = Object.freeze({
   [DEFAULT_MAP_ID]: {
     key: DEFAULT_MAP_ID,
@@ -83,31 +77,31 @@ const ITEM_DEFS = Object.freeze({
     key: 'iron_blade',
     slot: 'weapon',
     color: '#b91c1c',
-    bonuses: { str: 3, dex: 1 },
+    bonuses: { str: 1, dex: 1 },
   },
   guard_armor: {
     key: 'guard_armor',
     slot: 'armor',
     color: '#475569',
-    bonuses: { vit: 4, str: 1 },
+    bonuses: { vit: 1, str: 1 },
   },
   wind_boots: {
     key: 'wind_boots',
     slot: 'boots',
     color: '#2563eb',
-    bonuses: { agi: 3, luk: 1 },
+    bonuses: { agi: 1, luk: 1 },
   },
   focus_gloves: {
     key: 'focus_gloves',
     slot: 'gloves',
     color: '#7c3aed',
-    bonuses: { dex: 2, wis: 2 },
+    bonuses: { dex: 1, wis: 1 },
   },
   lucky_charm: {
     key: 'lucky_charm',
     slot: 'charm',
     color: '#d97706',
-    bonuses: { luk: 3, wis: 1 },
+    bonuses: { luk: 1, wis: 1 },
   },
 });
 
@@ -203,10 +197,6 @@ function normalizeStats(raw = {}) {
     wis: clamp(Number(raw.wis) || 0, 0, 999),
     luk: clamp(Number(raw.luk) || 0, 0, 999),
   };
-}
-
-function normalizeClassKey(raw) {
-  return typeof raw === 'string' && CLASS_DEFS[raw] ? raw : null;
 }
 
 function normalizeMapId(raw) {
@@ -359,7 +349,6 @@ function serializePlayerProfile(p) {
     xp: p.xp,
     hp: p.hp,
     statPoints: p.statPoints,
-    classKey: p.classKey,
     mapId: p.mapId,
     stats: p.stats,
     inventory: p.inventory,
@@ -391,7 +380,6 @@ function makePlayerState(socketId, name, saved = {}) {
   const stats = normalizeStats(saved.stats || DEFAULT_STATS);
   const inventory = normalizeInventory(saved.inventory);
   const equipment = normalizeEquipment(saved.equipment);
-  const classKey = normalizeClassKey(saved.classKey);
   const mapId = normalizeMapId(saved.mapId);
   const level = clamp(Number(saved.level) || 1, 1, MAX_LEVEL);
   const r = radiusForLevel(level);
@@ -410,7 +398,6 @@ function makePlayerState(socketId, name, saved = {}) {
     hp: 100,
     maxHp: 100,
     statPoints: clamp(Number(saved.statPoints) || 0, 0, 9999),
-    classKey,
     mapId,
     stats,
     inventory,
@@ -486,8 +473,6 @@ function buildSelfState(p, loots) {
     level: p.level,
     xp: p.xp,
     xpMax: xpToNextLevel(p.level),
-    classKey: p.classKey,
-    classUnlocked: p.level >= CLASS_UNLOCK_LEVEL,
     mapId: p.mapId,
     stats: getTotalStats(p),
     statPoints: p.statPoints,
@@ -759,7 +744,6 @@ setInterval(() => {
     level: p.level,
     xp: p.xp,
     xpMax: xpToNextLevel(p.level),
-    classKey: p.classKey,
     mapId: p.mapId,
     hp: p.hp,
     maxHp: p.maxHp,
@@ -883,38 +867,6 @@ io.on('connection', socket => {
         stats: getTotalStats(p),
         hp: p.hp,
         maxHp: p.maxHp,
-      });
-    }
-  });
-
-  socket.on('selectClass', ({ classKey }, ack) => {
-    const p = players[socket.id];
-    console.log('[class/select]', { socketId: socket.id, requested: classKey, level: p?.level, currentClassKey: p?.classKey || null });
-    if (!p) return ack && ack({ ok: false, error: 'not_joined' });
-    if (p.level < CLASS_UNLOCK_LEVEL) {
-      console.log('[class/select] reject', { socketId: socket.id, reason: 'class_locked', level: p.level });
-      return ack && ack({ ok: false, error: 'class_locked', unlockLevel: CLASS_UNLOCK_LEVEL });
-    }
-    if (p.classKey) {
-      console.log('[class/select] reject', { socketId: socket.id, reason: 'class_taken', classKey: p.classKey });
-      return ack && ack({ ok: false, error: 'class_taken', classKey: p.classKey });
-    }
-    const nextClassKey = normalizeClassKey(classKey);
-    if (!nextClassKey) {
-      console.log('[class/select] reject', { socketId: socket.id, reason: 'bad_class', requested: classKey });
-      return ack && ack({ ok: false, error: 'bad_class' });
-    }
-
-    p.classKey = nextClassKey;
-    console.log('[class/select] success', { socketId: socket.id, classKey: p.classKey });
-    emitSelfState(socket.id, p);
-    persistPlayerProfile(p, { immediate: true });
-
-    if (ack) {
-      ack({
-        ok: true,
-        classKey: p.classKey,
-        self: buildSelfState(p, playerLootsFor(p)),
       });
     }
   });

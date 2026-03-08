@@ -7,7 +7,6 @@
     "xp": 0,
     "hp": 100,
     "statPoints": 42,
-    "classKey": "vanguard",
     "mapId": "field",
     "stats": {
       "str": 0,
@@ -34,7 +33,6 @@
     "xp": 0,
     "hp": 100,
     "statPoints": 42,
-    "classKey": "vanguard",
     "mapId": "field",
     "stats": {
       "str": 0,
