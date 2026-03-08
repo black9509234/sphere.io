@@ -961,68 +961,155 @@
         }
 
         .bestiary-list {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
             margin-top: 10px;
         }
 
-        .bestiary-card {
-            padding: 8px;
+        .bestiary-browser {
+            display: grid;
+            grid-template-columns: 120px minmax(0, 1fr);
+            gap: 10px;
+        }
+
+        .bestiary-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+            align-content: start;
+        }
+
+        .bestiary-token {
+            padding: 8px 6px;
+            border: 1px solid rgba(17, 17, 17, .08);
+            border-radius: 3px;
+            background: rgba(255, 255, 255, .68);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .bestiary-token.active {
+            border-color: rgba(37, 99, 235, .36);
+            box-shadow: inset 0 0 0 1px rgba(37, 99, 235, .14);
+            background: rgba(37, 99, 235, .06);
+        }
+
+        .bestiary-token-name,
+        .bestiary-token-kills,
+        .bestiary-copy,
+        .bestiary-rarity,
+        .bestiary-empty {
+            font-size: 10px;
+            line-height: 1.4;
+        }
+
+        .bestiary-token-name,
+        .bestiary-name {
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .bestiary-token-kills,
+        .bestiary-copy,
+        .bestiary-rarity,
+        .bestiary-empty {
+            color: var(--muted);
+        }
+
+        .bestiary-detail {
+            min-width: 0;
+            padding: 10px;
             border: 1px solid rgba(17, 17, 17, .08);
             border-radius: 3px;
             background: rgba(255, 255, 255, .62);
         }
 
-        .bestiary-card.locked {
-            opacity: .68;
-        }
-
-        .bestiary-top,
-        .bestiary-copy,
-        .bestiary-rarity {
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            gap: 10px;
-        }
-
         .bestiary-top {
-            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
         }
 
         .bestiary-name {
-            font-size: 12px;
-            font-weight: 700;
-            text-transform: uppercase;
+            font-size: 14px;
         }
 
-        .bestiary-state,
-        .bestiary-copy,
-        .bestiary-rarity,
-        .bestiary-empty {
-            color: var(--muted);
-            font-size: 10px;
-            line-height: 1.45;
-        }
-
-        .bestiary-state {
+        .bestiary-icon-wrap {
+            width: 28px;
+            height: 28px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             flex-shrink: 0;
-            padding: 2px 6px;
-            border: 1px solid rgba(17, 17, 17, .1);
+        }
+
+        .bestiary-icon-wrap.large {
+            width: 42px;
+            height: 42px;
+        }
+
+        .bestiary-icon {
+            display: inline-block;
+        }
+
+        .bestiary-icon.type-dot {
+            width: 16px;
+            height: 16px;
+            border: 2px solid #111;
+            border-radius: 50%;
+        }
+
+        .bestiary-icon.type-line {
+            width: 22px;
+            height: 4px;
             border-radius: 999px;
-            background: rgba(17, 17, 17, .04);
-            color: var(--accent);
+        }
+
+        .bestiary-icon.type-triangle {
+            width: 0;
+            height: 0;
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-bottom: 18px solid #f59e0b;
+            filter: drop-shadow(0 0 0 #2a2a2a);
+        }
+
+        .bestiary-icon.type-square {
+            width: 16px;
+            height: 16px;
+            border: 2px solid #2a2a2a;
+        }
+
+        .bestiary-icon-wrap.large .bestiary-icon.type-dot {
+            width: 22px;
+            height: 22px;
+        }
+
+        .bestiary-icon-wrap.large .bestiary-icon.type-line {
+            width: 28px;
+            height: 5px;
+        }
+
+        .bestiary-icon-wrap.large .bestiary-icon.type-triangle {
+            border-left-width: 13px;
+            border-right-width: 13px;
+            border-bottom-width: 24px;
+        }
+
+        .bestiary-icon-wrap.large .bestiary-icon.type-square {
+            width: 22px;
+            height: 22px;
         }
 
         .bestiary-copy+.bestiary-copy,
         .bestiary-rarity {
-            margin-top: 4px;
+            margin-top: 6px;
         }
 
         .bestiary-rarity {
             border-top: 1px dashed rgba(17, 17, 17, .08);
-            padding-top: 4px;
+            padding-top: 6px;
         }
 
         .craft-meta {
@@ -1219,7 +1306,7 @@
                 left: 12px;
                 bottom: 12px;
             }
-        }
+        
 
         @media (max-width:720px) {
             #auth-screen {
@@ -1282,6 +1369,14 @@
 
             .craft-plus {
                 justify-self: center;
+            }
+
+            .bestiary-browser {
+                grid-template-columns: 1fr;
+            }
+
+            .bestiary-grid {
+                grid-template-columns: repeat(4, minmax(0, 1fr));
             }
 
             .auth-title-row {
@@ -2137,6 +2232,7 @@
             settingsOpen = false,
             inventoryOpen = false,
             bestiaryOpen = false,
+            selectedBestiaryType = "dot",
             craftOpen = false,
             craftSelection = [null, null],
             lastLoadoutSignature = "",
@@ -2289,6 +2385,15 @@
             return MONSTER_META[type]?.[currentLang] || String(type || "unknown").toUpperCase();
         }
 
+        function bestiaryIconMarkup(type, { large = false } = {}) {
+            const color = MONSTER_META[type]?.color || "#111111";
+            const className = `bestiary-icon type-${type}`;
+            const style = type === "triangle"
+                ? `style="border-bottom-color:${color};"`
+                : `style="background:${color};"`;
+            return `<span class="bestiary-icon-wrap${large ? " large" : ""}"><span class="${className}" ${style}></span></span>`;
+        }
+
         function percentText(value) {
             const pct = Math.max(0, Number(value) || 0) * 100;
             return `${pct >= 10 || pct === 0 ? pct.toFixed(0) : pct.toFixed(1)}%`;
@@ -2325,6 +2430,11 @@
             if (bestiaryOpen) toggleInventory(false);
             bestiaryPanel.style.display = bestiaryOpen && gameRunning ? "block" : "none";
             if (bestiaryOpen) setPanelCollapsed("bestiary", false, { persist: false });
+        }
+
+        function selectBestiaryType(type) {
+            selectedBestiaryType = type;
+            renderBestiary();
         }
 
         function toggleSettingsMenu(force) {
@@ -2517,57 +2627,41 @@
                 bestiaryList.appendChild(emptyNode);
                 return;
             }
+            const activeEntry = entries.find(entry => entry.type === selectedBestiaryType) || entries[0];
+            selectedBestiaryType = activeEntry.type;
 
+            const browser = document.createElement("div");
+            browser.className = "bestiary-browser";
+
+            const grid = document.createElement("div");
+            grid.className = "bestiary-grid";
             for (const entry of entries) {
-                const card = document.createElement("div");
-                card.className = `bestiary-card${entry.unlocked ? "" : " locked"}`;
-
-                const top = document.createElement("div");
-                top.className = "bestiary-top";
-
-                const nameNode = document.createElement("div");
-                nameNode.className = "bestiary-name";
-                nameNode.textContent = monsterName(entry.type);
-                nameNode.style.color = MONSTER_META[entry.type]?.color || "#101010";
-
-                const stateNode = document.createElement("div");
-                stateNode.className = "bestiary-state";
-                stateNode.textContent = entry.unlocked ? t("bestiary_state_live") : t("bestiary_state_locked");
-
-                top.appendChild(nameNode);
-                top.appendChild(stateNode);
-                card.appendChild(top);
-
-                const statsNode = document.createElement("div");
-                statsNode.className = "bestiary-copy";
-                statsNode.textContent = `HP ${entry.hp} · DMG ${entry.dmg} · XP ${entry.xp}`;
-                card.appendChild(statsNode);
-
-                const chanceNode = document.createElement("div");
-                chanceNode.className = "bestiary-copy";
-                chanceNode.textContent = `${t("bestiary_spawn", { rate: percentText(entry.spawnChance) })} · ${t("bestiary_drop", { rate: percentText(entry.dropChance) })}`;
-                card.appendChild(chanceNode);
-
-                const unlockNode = document.createElement("div");
-                unlockNode.className = "bestiary-copy";
-                unlockNode.textContent = entry.unlockByType
-                    ? t("bestiary_unlock_progress", {
-                        monster: monsterName(entry.unlockByType),
-                        count: Math.min(entry.unlockProgress || 0, entry.unlockKills || 0),
-                        need: entry.unlockKills || 0,
-                    })
-                    : t("bestiary_unlock_initial");
-                card.appendChild(unlockNode);
-
-                const rarityNode = document.createElement("div");
-                rarityNode.className = "bestiary-rarity";
-                rarityNode.textContent = (Array.isArray(entry.rarityTable) ? entry.rarityTable : [])
-                    .map(row => `${rarityName(row.rarity)} ${percentText(row.chance)}`)
-                    .join(" · ");
-                card.appendChild(rarityNode);
-
-                bestiaryList.appendChild(card);
+                const token = document.createElement("button");
+                token.type = "button";
+                token.className = `bestiary-token${entry.type === selectedBestiaryType ? " active" : ""}`;
+                token.innerHTML = `${bestiaryIconMarkup(entry.type)}<span class="bestiary-token-name">${escHtml(monsterName(entry.type))}</span><span class="bestiary-token-kills">KILLS ${entry.kills || 0}</span>`;
+                token.onclick = () => selectBestiaryType(entry.type);
+                grid.appendChild(token);
             }
+
+            const detail = document.createElement("div");
+            detail.className = "bestiary-detail";
+            detail.innerHTML = `
+                <div class="bestiary-top">
+                    ${bestiaryIconMarkup(activeEntry.type, { large: true })}
+                    <div>
+                        <div class="bestiary-name" style="color:${MONSTER_META[activeEntry.type]?.color || "#101010"}">${escHtml(monsterName(activeEntry.type))}</div>
+                        <div class="bestiary-copy">KILLS ${activeEntry.kills || 0}</div>
+                    </div>
+                </div>
+                <div class="bestiary-copy">HP ${activeEntry.hp} · DMG ${activeEntry.dmg} · XP ${activeEntry.xp}</div>
+                <div class="bestiary-copy">${t("bestiary_spawn", { rate: percentText(activeEntry.spawnChance) })} · ${t("bestiary_drop", { rate: percentText(activeEntry.dropChance) })}</div>
+                <div class="bestiary-rarity">${(Array.isArray(activeEntry.rarityTable) ? activeEntry.rarityTable : []).map(row => `${rarityName(row.rarity)} ${percentText(row.chance)}`).join(" · ")}</div>
+            `;
+
+            browser.appendChild(grid);
+            browser.appendChild(detail);
+            bestiaryList.appendChild(browser);
         }
 
         function renderLoadout(force = false) {
@@ -3126,9 +3220,14 @@
                 hpLow: "#991b1b"
             };
 
-        function updateCam(me) {
-            camX = Math.max(0, Math.min(Math.max(0, worldW - viewW), me.x - viewW / 2));
-            camY = Math.max(0, Math.min(Math.max(0, worldH - viewH), me.y - viewH / 2));
+        function updateCam(me, dt) {
+            const tx = me.x - viewW / 2,
+                ty = me.y - viewH / 2,
+                f = 1 - Math.exp(-CAM_SPEED * dt);
+            camX += (tx - camX) * f;
+            camY += (ty - camY) * f;
+            camX = Math.max(0, Math.min(Math.max(0, worldW - viewW), camX));
+            camY = Math.max(0, Math.min(Math.max(0, worldH - viewH), camY));
         }
 
         const toMath = (x, y) => ({ mx: Math.round(x - worldW / 2), my: Math.round(worldH / 2 - y) });
@@ -3524,8 +3623,9 @@
             stepRenderEntities(renderMonsters, dt, MONSTER_RENDER_SPEED);
             drawBg();
             const me = playerMap[myId];
-            if (me) {
-                updateCam(me);
+            const renderMe = renderPlayers[myId];
+            if (renderMe) {
+                updateCam(renderMe, dt);
             }
             if (me) {
                 updateHudPos(me);

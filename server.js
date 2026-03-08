@@ -47,12 +47,6 @@ const MONSTER_TYPES = [
   { type: 'square', hp: 120, speed: 0.5, r: 22, xp: 60, color: '#14b8a6', dmg: 28, atkR: 38, atkCD: 3000 },
 ];
 const MONSTER_TYPE_MAP = Object.freeze(Object.fromEntries(MONSTER_TYPES.map(def => [def.type, def])));
-const MONSTER_PROGRESS_RULES = Object.freeze({
-  dot: { unlockByType: null, unlockKills: 0, spawnWeight: 1.2 },
-  line: { unlockByType: 'dot', unlockKills: 12, spawnWeight: 0.72 },
-  triangle: { unlockByType: 'line', unlockKills: 10, spawnWeight: 0.42 },
-  square: { unlockByType: 'triangle', unlockKills: 8, spawnWeight: 0.24 },
-});
 
 const DEFAULT_STATS = Object.freeze({ str: 0, agi: 0, vit: 0, dex: 0, wis: 0, luk: 0 });
 const EQUIP_SLOTS = Object.freeze(['weapon', 'armor', 'boots', 'gloves', 'charm']);
@@ -462,33 +456,15 @@ function rollWeighted(entries) {
 }
 
 function rollRarityForMonster(monster) {
-  return rollWeighted(effectiveRarityTableForMonsterType(monster.type));
-}
-
-function monsterProgressRule(type) {
-  return MONSTER_PROGRESS_RULES[type] || MONSTER_PROGRESS_RULES.dot;
-}
-
-function isMonsterTypeUnlocked(type) {
-  const rule = monsterProgressRule(type);
-  if (!rule.unlockByType) return true;
-  return (worldMonsterKills[rule.unlockByType] || 0) >= rule.unlockKills;
-}
-
-function currentLootRarityCap() {
-  return isMonsterTypeUnlocked('line') ? MAX_RARITY : 1;
+  return rollWeighted(rarityTableForMonsterType(monster.type));
 }
 
 function effectiveRarityTableForMonsterType(type) {
-  const filtered = rarityTableForMonsterType(type).filter(entry => entry.rarity <= currentLootRarityCap());
-  if (filtered.length === 0) return [{ rarity: 1, weight: 1 }];
-  return normalizeWeightedEntries(filtered);
+  return normalizeWeightedEntries(rarityTableForMonsterType(type));
 }
 
 function availableMonsterSpawnEntries() {
-  return MONSTER_TYPES
-    .filter(def => isMonsterTypeUnlocked(def.type))
-    .map(def => ({ def, weight: monsterProgressRule(def.type).spawnWeight || 1 }));
+  return MONSTER_TYPES.map(def => ({ def, weight: 1 }));
 }
 
 function pickMonsterTypeForSpawn() {
@@ -522,7 +498,6 @@ function buildBestiaryState() {
   return {
     totalKills: Object.values(worldMonsterKills).reduce((sum, count) => sum + count, 0),
     entries: MONSTER_TYPES.map(def => {
-      const rule = monsterProgressRule(def.type);
       return {
         type: def.type,
         hp: def.hp,
@@ -531,11 +506,11 @@ function buildBestiaryState() {
         dmg: def.dmg,
         dropChance: lootDropChanceForMonster(def),
         spawnChance: spawnChanceMap[def.type] || 0,
-        unlocked: isMonsterTypeUnlocked(def.type),
+        unlocked: true,
         kills: worldMonsterKills[def.type] || 0,
-        unlockByType: rule.unlockByType,
-        unlockKills: rule.unlockKills || 0,
-        unlockProgress: rule.unlockByType ? (worldMonsterKills[rule.unlockByType] || 0) : 0,
+        unlockByType: null,
+        unlockKills: 0,
+        unlockProgress: 0,
         rarityTable: effectiveRarityTableForMonsterType(def.type).map(entry => ({
           rarity: entry.rarity,
           chance: entry.weight,
@@ -730,7 +705,7 @@ function spawnOrb(mapId = DEFAULT_MAP_ID) {
 
 function spawnMonster(mapId = DEFAULT_MAP_ID) {
   if (Object.keys(monsters).length >= MAX_MONSTERS) return;
-  const def = pickMonsterTypeForSpawn();
+  const def = MONSTER_TYPES[Math.floor(Math.random() * MONSTER_TYPES.length)];
   const id = ++monsterIdCounter;
   const pos = randomPos(60);
   const wander = randomWander(pos.x, pos.y);
