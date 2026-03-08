@@ -2759,7 +2759,10 @@
         const bubbles = {},
             MAX_CHAT_LINES = 80,
             dmgNums = [];
-        const escHtml = value => String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+        function escHtml(value) {
+            return String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
 
         function addChatLine(safeHtml, cls = "") {
             const div = document.createElement("div");
