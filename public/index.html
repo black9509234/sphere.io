@@ -382,8 +382,7 @@
         #chat-wrap>.chat-head,
         #chat-log,
         #chat-input-row,
-        #controls-body,
-        #logout-btn {
+        #controls-body {
             border: 1px solid var(--border);
             background: var(--panel);
             backdrop-filter: blur(10px);
@@ -631,16 +630,21 @@
         }
 
         #inventory-toggle,
-        #inventory-panel {
+        #inventory-panel,
+        #bestiary-toggle,
+        #bestiary-panel,
+        #settings-menu,
+        #settings-btn {
             border: 1px solid var(--border);
             background: var(--panel);
             backdrop-filter: blur(10px);
             box-shadow: 0 10px 24px rgba(18, 18, 18, .08);
         }
 
-        #inventory-toggle {
+        #inventory-toggle,
+        #bestiary-toggle,
+        #settings-btn {
             position: fixed;
-            top: 48px;
             z-index: 21;
             display: none;
             padding: 8px 10px;
@@ -651,30 +655,84 @@
             text-transform: uppercase;
         }
 
+        #settings-btn {
+            top: 12px;
+            right: 12px;
+            z-index: 23;
+        }
+
         #inventory-toggle {
+            top: 48px;
             right: 12px;
         }
 
-        #inventory-panel {
-            position: fixed;
+        #bestiary-toggle {
             top: 84px;
+            right: 12px;
+        }
+
+        #inventory-panel,
+        #bestiary-panel {
+            position: fixed;
+            top: 120px;
             right: 12px;
             z-index: 22;
             display: none;
             width: min(320px, calc(100vw - 24px));
-            max-height: calc(100vh - 108px);
+            max-height: calc(100vh - 144px);
             padding: 10px;
             border-radius: 3px;
             overflow-y: auto;
         }
 
-        #inventory-panel::-webkit-scrollbar {
+        #inventory-panel::-webkit-scrollbar,
+        #bestiary-panel::-webkit-scrollbar {
             width: 6px;
         }
 
-        #inventory-panel::-webkit-scrollbar-thumb {
+        #inventory-panel::-webkit-scrollbar-thumb,
+        #bestiary-panel::-webkit-scrollbar-thumb {
             background: rgba(17, 17, 17, .18);
             border-radius: 2px;
+        }
+
+        #settings-menu {
+            position: fixed;
+            top: 48px;
+            right: 12px;
+            z-index: 24;
+            display: none;
+            min-width: 156px;
+            padding: 8px;
+            border-radius: 3px;
+        }
+
+        .settings-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .settings-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            width: 100%;
+            padding: 8px 9px;
+            border: 1px solid rgba(17, 17, 17, .08);
+            border-radius: 2px;
+            background: rgba(255, 255, 255, .64);
+            color: var(--text);
+            font: 700 11px var(--mono);
+            letter-spacing: .08em;
+            text-transform: uppercase;
+        }
+
+        .settings-item-label {
+            color: var(--muted);
+            font: 10px var(--mono);
+            letter-spacing: .14em;
         }
 
         .inventory-head,
@@ -690,7 +748,8 @@
             align-items: center;
         }
 
-        #inventory-close {
+        #inventory-close,
+        #bestiary-close {
             min-width: 26px;
             height: 26px;
             border: 1px solid rgba(17, 17, 17, .12);
@@ -725,37 +784,8 @@
             background: linear-gradient(90deg, rgba(248, 113, 113, .4), #dc2626);
         }
 
-        #logout-btn {
-            position: fixed;
-            top: 12px;
-            right: 12px;
-            z-index: 11;
-            display: none;
-            padding: 8px 10px;
-            border-radius: 2px;
-            color: var(--muted);
-            font: 700 11px var(--mono);
-            letter-spacing: .14em;
-            text-transform: uppercase;
-            transition: .16s;
-        }
-
-        #lang-btn {
-            position: fixed;
-            top: 12px;
-            z-index: 12;
-            padding: 8px 10px;
-            border: 1px solid rgba(17, 17, 17, .12);
-            border-radius: 2px;
-            background: rgba(255, 255, 255, .88);
-            color: var(--accent);
-            font: 700 11px var(--mono);
-            letter-spacing: .12em;
-            text-transform: uppercase;
-            cursor: pointer;
-        }
-
-        #logout-btn:hover {
+        #settings-btn:hover,
+        .settings-item:hover {
             border-color: rgba(17, 17, 17, .14);
             color: var(--accent);
             background: rgba(17, 17, 17, .04);
@@ -930,17 +960,11 @@
             font: 700 20px var(--mono);
         }
 
-        .bestiary-section {
-            margin-top: 12px;
-            padding-top: 10px;
-            border-top: 1px solid rgba(17, 17, 17, .08);
-        }
-
         .bestiary-list {
             display: flex;
             flex-direction: column;
             gap: 8px;
-            margin-top: 8px;
+            margin-top: 10px;
         }
 
         .bestiary-card {
@@ -1179,21 +1203,17 @@
                 grid-template-columns: repeat(2, minmax(150px, 1fr));
             }
 
-            #logout-btn,
+            #inventory-toggle,
+            #bestiary-toggle,
             #chat-wrap,
-            #lang-btn {
+            #settings-btn {
                 right: 12px;
             }
 
-            #logout-btn {
-                top: 12px;
+            #settings-menu {
+                right: 12px;
             }
-
-            #lang-btn {
-                right: 112px;
-                top: 12px;
-            }
-            }
+        }
 
             #controls-card {
                 left: 12px;
@@ -1307,7 +1327,19 @@
         </div>
     </div>
     <canvas id="canvas"></canvas>
-    <button id="lang-btn" onclick="toggleLanguage()">KO</button>
+    <button id="settings-btn" type="button" onclick="toggleSettingsMenu()" data-i18n="btn_settings">SETTINGS</button>
+    <div id="settings-menu">
+        <div class="settings-list">
+            <button class="settings-item" type="button" onclick="toggleLanguage()">
+                <span class="settings-item-label" data-i18n="settings_lang">LANGUAGE</span>
+                <span id="settings-lang-value">KO</span>
+            </button>
+            <button class="settings-item" type="button" onclick="doLogout()">
+                <span class="settings-item-label" data-i18n="settings_logout">DISCONNECT</span>
+                <span data-i18n="btn_disconnect">DISCONNECT</span>
+            </button>
+        </div>
+    </div>
     <div id="hud" class="panel-shell">
         <div class="panel-head tight">
             <div class="panel-title">TACTICAL FEED</div>
@@ -1397,6 +1429,7 @@
         </div>
     </div>
     <button id="inventory-toggle" onclick="toggleInventory()" data-i18n="btn_inventory">INVENTORY</button>
+    <button id="bestiary-toggle" onclick="toggleBestiary()" data-i18n="btn_bestiary">BESTIARY</button>
     <div id="inventory-panel">
         <div class="inventory-head">
             <div>
@@ -1423,14 +1456,25 @@
                     <div class="gear-list" id="inventory-list"></div>
                 </div>
             </div>
-            <div class="bestiary-section">
-                <div class="gear-head">
-                    <span class="hi-label" data-i18n="bestiary_title">BESTIARY</span>
-                    <span class="gear-note" id="bestiary-summary"></span>
-                </div>
-                <div class="bestiary-list" id="bestiary-list"></div>
-            </div>
             <div class="gear-note" data-i18n="hud_penalty">Death can cost XP, a stat point, and one owned item.</div>
+        </div>
+    </div>
+    <div id="bestiary-panel">
+        <div class="inventory-head">
+            <div>
+                <div class="chat-kicker" data-i18n="bestiary_title">BESTIARY</div>
+                <div class="control-title" data-i18n="bestiary_title">BESTIARY</div>
+            </div>
+            <div style="display:flex; gap:6px;">
+                <button class="panel-toggle" type="button" id="bestiary-collapse" onclick="togglePanel('bestiary')">-</button>
+                <button id="bestiary-close" onclick="toggleBestiary(false)">X</button>
+            </div>
+        </div>
+        <div class="panel-body" id="bestiary-body">
+            <div class="inventory-meta">
+                <span class="hi-sub" id="bestiary-summary">0</span>
+            </div>
+            <div class="bestiary-list" id="bestiary-list"></div>
         </div>
     </div>
     <button id="craft-toggle" type="button" onclick="toggleCraftPanel()" data-i18n="btn_craft">CRAFT</button>
@@ -1457,7 +1501,6 @@
             <button class="craft-btn primary" type="button" id="craft-action" onclick="craftSelectedItems()" data-i18n="btn_craft_action" disabled>COMBINE</button>
         </div>
     </div>
-    <button id="logout-btn" onclick="doLogout()" data-i18n="btn_disconnect">DISCONNECT</button>
     <div id="controls-card" class="panel-shell">
         <div class="panel-head tight">
             <div>
@@ -1472,6 +1515,7 @@
                 <div class="control-row"><span data-i18n="controls_attack">ATTACK</span><span class="kbd">LMB</span></div>
                 <div class="control-row"><span data-i18n="controls_chat">CHAT</span><span class="kbd">ENTER</span></div>
                 <div class="control-row"><span data-i18n="controls_inventory">INVENTORY</span><span class="kbd">E</span></div>
+                <div class="control-row"><span data-i18n="controls_bestiary">BESTIARY</span><span class="kbd">B</span></div>
                 <div class="control-row"><span data-i18n="controls_craft">CRAFT</span><span class="kbd">Z</span></div>
                 <div class="control-row"><span data-i18n="controls_close">CLOSE</span><span class="kbd">ESC</span></div>
             </div>
@@ -1529,12 +1573,15 @@
                 hud_online: "접속 수",
                 hud_stats: "능력치",
                 btn_disconnect: "연결 종료",
+                btn_settings: "설정",
+                btn_bestiary: "도감",
                 controls_kicker: "조작",
                 controls_title: "키맵",
                 controls_move: "이동",
                 controls_attack: "공격",
                 controls_chat: "채팅",
                 controls_craft: "조합",
+                controls_bestiary: "도감",
                 controls_close: "닫기",
                 chat_kicker: "월드 채팅",
                 chat_title: "실시간 로그",
@@ -1624,12 +1671,15 @@
                 hud_online: "Online",
                 hud_stats: "STATS",
                 btn_disconnect: "DISCONNECT",
+                btn_settings: "SETTINGS",
+                btn_bestiary: "BESTIARY",
                 controls_kicker: "CONTROLS",
                 controls_title: "KEYMAP",
                 controls_move: "MOVE",
                 controls_attack: "ATTACK",
                 controls_chat: "CHAT",
                 controls_craft: "CRAFT",
+                controls_bestiary: "BESTIARY",
                 controls_close: "CLOSE",
                 chat_kicker: "WORLD CHAT",
                 chat_title: "realtime.log",
@@ -1721,6 +1771,8 @@
             sys_craft_error_max_rarity: "조합 실패 :: 이미 최고 등급입니다.",
             sys_craft_success: "조합 성공 :: {item}",
             sys_craft_fail: "조합 실패 :: 재료가 소멸했습니다",
+            settings_lang: "언어",
+            settings_logout: "연결 종료",
             bestiary_title: "적 도감",
             bestiary_summary: "현재 출현표 :: 총 처치 {total}",
             bestiary_empty: "표시할 적 정보가 없습니다.",
@@ -1759,6 +1811,8 @@
             sys_craft_error_max_rarity: "CRAFT FAILED :: item is already at max rarity.",
             sys_craft_success: "CRAFT SUCCESS :: {item}",
             sys_craft_fail: "CRAFT FAILED :: materials were destroyed",
+            settings_lang: "LANGUAGE",
+            settings_logout: "DISCONNECT",
             bestiary_title: "BESTIARY",
             bestiary_summary: "LIVE TABLE :: TOTAL KILLS {total}",
             bestiary_empty: "No enemy entries to display.",
@@ -1865,12 +1919,18 @@
             inventoryList = document.getElementById("inventory-list"),
             bestiaryList = document.getElementById("bestiary-list"),
             bestiarySummary = document.getElementById("bestiary-summary"),
+            bestiaryBody = document.getElementById("bestiary-body"),
             hudBody = document.getElementById("hud-body"),
             inventoryBody = document.getElementById("inventory-body"),
             controlsBody = document.getElementById("controls-body"),
             chatBody = document.getElementById("chat-body"),
+            settingsBtn = document.getElementById("settings-btn"),
+            settingsMenu = document.getElementById("settings-menu"),
+            settingsLangValue = document.getElementById("settings-lang-value"),
             inventoryToggleBtn = document.getElementById("inventory-toggle"),
+            bestiaryToggleBtn = document.getElementById("bestiary-toggle"),
             inventoryPanel = document.getElementById("inventory-panel"),
+            bestiaryPanel = document.getElementById("bestiary-panel"),
             craftToggleBtn = document.getElementById("craft-toggle"),
             craftPanel = document.getElementById("craft-panel"),
             craftSlotA = document.getElementById("craft-slot-a"),
@@ -1879,7 +1939,6 @@
             craftResult = document.getElementById("craft-result"),
             craftStatus = document.getElementById("craft-status"),
             craftActionBtn = document.getElementById("craft-action"),
-            langBtn = document.getElementById("lang-btn"),
             chatLog = document.getElementById("chat-log"),
             chatInput = document.getElementById("chat-input"),
             controlsCard = document.getElementById("controls-card"),
@@ -1887,18 +1946,21 @@
         const panelBodies = {
             hud: hudBody,
             inventory: inventoryBody,
+            bestiary: bestiaryBody,
             controls: controlsBody,
             chat: chatBody,
         };
         const panelShells = {
             hud: document.getElementById("hud"),
             inventory: document.getElementById("inventory-panel"),
+            bestiary: document.getElementById("bestiary-panel"),
             controls: document.getElementById("controls-card"),
             chat: document.getElementById("chat-wrap"),
         };
         const panelButtons = {
             hud: document.getElementById("hud-toggle"),
             inventory: document.getElementById("inventory-collapse"),
+            bestiary: document.getElementById("bestiary-collapse"),
             controls: document.getElementById("controls-toggle"),
             chat: document.getElementById("chat-toggle"),
         };
@@ -1970,7 +2032,7 @@
             });
             document.getElementById("sbtn-lbl").textContent = authMode === "signup" ? t("auth_create_account") : t("auth_connect");
             elStatPts.textContent = t("stat_points", { count: Number.parseInt(elStatPts.textContent, 10) || 0 });
-            langBtn.textContent = currentLang === "ko" ? "EN" : "KO";
+            settingsLangValue.textContent = currentLang === "ko" ? "KO" : "EN";
             renderLoadout(true);
         }
 
@@ -1978,6 +2040,7 @@
             currentLang = currentLang === "ko" ? "en" : "ko";
             localStorage.setItem(LANG_KEY, currentLang);
             renderStaticI18n();
+            toggleSettingsMenu(false);
         }
 
         function setMode(mode) {
@@ -2071,7 +2134,9 @@
             keys = { up: false, down: false, left: false, right: false };
         let lastKeys = {},
             gameRunning = false,
+            settingsOpen = false,
             inventoryOpen = false,
+            bestiaryOpen = false,
             craftOpen = false,
             craftSelection = [null, null],
             lastLoadoutSignature = "",
@@ -2092,8 +2157,23 @@
                 e.preventDefault();
                 return;
             }
+            if ((e.key === "b" || e.key === "B") && gameRunning && !chatFocused()) {
+                toggleBestiary();
+                e.preventDefault();
+                return;
+            }
+            if (e.key === "Escape" && settingsOpen) {
+                toggleSettingsMenu(false);
+                e.preventDefault();
+                return;
+            }
             if (e.key === "Escape" && craftOpen) {
                 toggleCraftPanel(false);
+                e.preventDefault();
+                return;
+            }
+            if (e.key === "Escape" && bestiaryOpen) {
+                toggleBestiary(false);
                 e.preventDefault();
                 return;
             }
@@ -2121,6 +2201,12 @@
         addEventListener("blur", () => {
             keys.up = keys.down = keys.left = keys.right = false;
             sendKeys();
+        });
+
+        addEventListener("mousedown", e => {
+            if (!settingsOpen) return;
+            if (settingsMenu.contains(e.target) || settingsBtn.contains(e.target)) return;
+            toggleSettingsMenu(false);
         });
 
         canvas.addEventListener("mousedown", e => {
@@ -2229,8 +2315,21 @@
 
         function toggleInventory(force) {
             inventoryOpen = typeof force === "boolean" ? force : !inventoryOpen;
+            if (inventoryOpen) toggleBestiary(false);
             inventoryPanel.style.display = inventoryOpen && gameRunning ? "block" : "none";
             if (inventoryOpen) setPanelCollapsed("inventory", false, { persist: false });
+        }
+
+        function toggleBestiary(force) {
+            bestiaryOpen = typeof force === "boolean" ? force : !bestiaryOpen;
+            if (bestiaryOpen) toggleInventory(false);
+            bestiaryPanel.style.display = bestiaryOpen && gameRunning ? "block" : "none";
+            if (bestiaryOpen) setPanelCollapsed("bestiary", false, { persist: false });
+        }
+
+        function toggleSettingsMenu(force) {
+            settingsOpen = typeof force === "boolean" ? force : !settingsOpen;
+            settingsMenu.style.display = settingsOpen && gameRunning ? "block" : "none";
         }
 
         function craftErrorMessage(code) {
@@ -2834,10 +2933,13 @@
             gameRunning = true;
             document.getElementById("auth-screen").style.display = "none";
             document.getElementById("hud").style.display = "flex";
-            document.getElementById("logout-btn").style.display = "block";
+            settingsBtn.style.display = "block";
             inventoryToggleBtn.style.display = "block";
+            bestiaryToggleBtn.style.display = "block";
             craftToggleBtn.style.display = "block";
+            toggleSettingsMenu(false);
             toggleInventory(false);
+            toggleBestiary(false);
             toggleCraftPanel(false);
             document.getElementById("chat-wrap").style.display = "flex";
             controlsCard.style.display = "block";
@@ -2957,7 +3059,9 @@
             renderPlayers = {};
             renderMonsters = {};
             dmgNums.length = 0;
+            settingsOpen = false;
             inventoryOpen = false;
+            bestiaryOpen = false;
             craftOpen = false;
             craftSelection = [null, null];
             lastLoadoutSignature = "";
@@ -2966,10 +3070,13 @@
                 socket = null;
             }
             document.getElementById("hud").style.display = "none";
-            document.getElementById("logout-btn").style.display = "none";
+            settingsBtn.style.display = "none";
+            settingsMenu.style.display = "none";
             inventoryToggleBtn.style.display = "none";
+            bestiaryToggleBtn.style.display = "none";
             craftToggleBtn.style.display = "none";
             inventoryPanel.style.display = "none";
+            bestiaryPanel.style.display = "none";
             craftPanel.style.display = "none";
             document.getElementById("chat-wrap").style.display = "none";
             controlsCard.style.display = "none";
@@ -3019,14 +3126,9 @@
                 hpLow: "#991b1b"
             };
 
-        function updateCam(me, dt) {
-            const tx = me.x - viewW / 2,
-                ty = me.y - viewH / 2,
-                f = 1 - Math.exp(-CAM_SPEED * dt);
-            camX += (tx - camX) * f;
-            camY += (ty - camY) * f;
-            camX = Math.max(0, Math.min(Math.max(0, worldW - viewW), camX));
-            camY = Math.max(0, Math.min(Math.max(0, worldH - viewH), camY));
+        function updateCam(me) {
+            camX = Math.max(0, Math.min(Math.max(0, worldW - viewW), me.x - viewW / 2));
+            camY = Math.max(0, Math.min(Math.max(0, worldH - viewH), me.y - viewH / 2));
         }
 
         const toMath = (x, y) => ({ mx: Math.round(x - worldW / 2), my: Math.round(worldH / 2 - y) });
@@ -3422,9 +3524,8 @@
             stepRenderEntities(renderMonsters, dt, MONSTER_RENDER_SPEED);
             drawBg();
             const me = playerMap[myId];
-            const renderMe = renderPlayers[myId];
-            if (renderMe) {
-                updateCam(renderMe, dt);
+            if (me) {
+                updateCam(me);
             }
             if (me) {
                 updateHudPos(me);
