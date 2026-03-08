@@ -104,41 +104,21 @@
 
         .auth-box {
             position: relative;
-            width: min(450px, 100%);
-            overflow: hidden;
+            width: min(420px, 100%);
             border: 1px solid var(--border2);
             border-radius: 4px;
             background: linear-gradient(180deg, rgba(255, 255, 255, .98), rgba(243, 243, 238, .96));
             box-shadow: var(--shadow);
         }
 
-        .auth-box::before {
-            content: "";
-            position: absolute;
-            inset: 0 0 auto;
-            height: 52px;
-            background: linear-gradient(90deg, rgba(0, 0, 0, .04), rgba(0, 0, 0, 0));
-        }
-
-        .auth-titlebar {
-            display: flex;
-            align-items: center;
-            gap: 0;
-            padding: 14px 18px;
-            border-bottom: 1px solid rgba(17, 17, 17, .08);
-            background: rgba(252, 252, 251, .92);
-            color: var(--muted);
-            font: 11px var(--mono);
-            letter-spacing: .12em;
-            text-transform: uppercase;
-        }
-
         .auth-body {
-            position: relative;
-            padding: 24px;
+            padding: 28px 24px 22px;
         }
 
-        .auth-kicker,
+        .auth-head {
+            margin-bottom: 22px;
+        }
+
         .field-lbl,
         .hi-label,
         .control-kicker,
@@ -150,48 +130,19 @@
             text-transform: uppercase;
         }
 
-        .auth-kicker {
-            margin-bottom: 10px;
-        }
-
-        .auth-title-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-            gap: 12px;
-            margin-bottom: 10px;
-        }
-
         .auth-title {
-            font-size: 34px;
+            font-size: 32px;
             font-weight: 700;
             letter-spacing: .02em;
             text-transform: uppercase;
             text-shadow: none;
         }
 
-        .auth-pill {
-            padding: 6px 10px;
-            border: 1px solid rgba(17, 17, 17, .12);
-            border-radius: 2px;
-            background: rgba(255, 255, 255, .72);
-            color: var(--accent);
-            font: 10px var(--mono);
-            letter-spacing: .14em;
-        }
-
-        .auth-sub {
-            margin-bottom: 24px;
-            color: var(--muted);
-            font-size: 13px;
-            line-height: 1.6;
-        }
-
         .mode-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 10px;
-            margin-bottom: 22px;
+            margin-bottom: 18px;
         }
 
         .mbtn {
@@ -243,12 +194,6 @@
             box-shadow: 0 0 0 3px rgba(17, 17, 17, .04);
         }
 
-        .ipfx {
-            color: var(--accent);
-            font: 13px var(--mono);
-            user-select: none;
-        }
-
         .irow input {
             flex: 1;
             padding: 13px 0;
@@ -265,14 +210,9 @@
             color: rgba(80, 80, 80, .54);
         }
 
-        .sep {
-            margin: 18px 0;
-            border: none;
-            border-top: 1px solid rgba(17, 17, 17, .08);
-        }
-
         .sbtn {
             width: 100%;
+            margin-top: 4px;
             padding: 15px;
             border: 1px solid rgba(17, 17, 17, .12);
             border-radius: 2px;
@@ -285,10 +225,14 @@
         }
 
         .auth-msg {
-            min-height: 18px;
-            margin-top: 12px;
+            display: none;
             color: var(--muted);
             font: 11px var(--mono);
+        }
+
+        .auth-msg:not(:empty) {
+            display: block;
+            margin-top: 12px;
         }
 
         .auth-msg.err {
@@ -1497,10 +1441,6 @@
                 grid-template-columns: repeat(4, minmax(0, 1fr));
             }
 
-            .auth-title-row {
-                flex-direction: column;
-                align-items: flex-start;
-            }
         }
     </style>
 </head>
@@ -1508,33 +1448,27 @@
 <body>
     <div id="auth-screen">
         <div class="auth-box">
-            <div class="auth-titlebar"><span data-i18n="auth_titlebar">SPHERE.IO // ACCESS NODE</span></div>
             <div class="auth-body">
-                <div class="auth-kicker" data-i18n="auth_kicker">WORLD ACCESS</div>
-                <div class="auth-title-row">
+                <div class="auth-head">
                     <div class="auth-title">sphere.io</div>
-                    <div class="auth-pill" data-i18n="auth_pill">TERMINAL UI</div>
                 </div>
-                <div class="auth-sub" data-i18n="auth_sub">Compact terminal overlays. Lower visual weight, sharper hierarchy, less screen
-                    coverage.</div>
                 <div class="mode-row"><button class="mbtn on" id="btn-ln"
                         onclick="setMode('login')" data-i18n="btn_login">LOGIN</button><button class="mbtn" id="btn-su"
                         onclick="setMode('signup')" data-i18n="btn_register">REGISTER</button></div>
                 <div class="field"><label class="field-lbl" data-i18n="field_user">USER_ID</label>
-                    <div class="irow"><span class="ipfx">&gt;</span><input id="i-user" type="text"
-                            placeholder="username" data-i18n-placeholder="ph_user" maxlength="16" autocomplete="off" /></div>
+                    <div class="irow"><input id="i-user" type="text" placeholder="username"
+                            data-i18n-placeholder="ph_user" maxlength="16" autocomplete="off" /></div>
                 </div>
                 <div class="field"><label class="field-lbl" data-i18n="field_pass">PASSWORD</label>
-                    <div class="irow"><span class="ipfx">&gt;</span><input id="i-pass" type="password"
-                            placeholder="password" data-i18n-placeholder="ph_pass" maxlength="32" /></div>
+                    <div class="irow"><input id="i-pass" type="password" placeholder="password"
+                            data-i18n-placeholder="ph_pass" maxlength="32" /></div>
                 </div>
                 <div class="field" id="cfm-row" style="display:none"><label
                         class="field-lbl" data-i18n="field_confirm">CONFIRM_PASSWORD</label>
-                    <div class="irow"><span class="ipfx">&gt;</span><input id="i-cfm" type="password"
-                            placeholder="confirm password" data-i18n-placeholder="ph_confirm" maxlength="32" /></div>
+                    <div class="irow"><input id="i-cfm" type="password" placeholder="confirm password"
+                            data-i18n-placeholder="ph_confirm" maxlength="32" /></div>
                 </div>
-                <hr class="sep" /><button class="sbtn" onclick="handleAuth()"><span
-                        id="sbtn-lbl">CONNECT</span></button>
+                <button class="sbtn" onclick="handleAuth()"><span id="sbtn-lbl">CONNECT</span></button>
                 <div class="auth-msg" id="auth-msg"></div>
             </div>
         </div>
@@ -1776,10 +1710,6 @@
 
         const I18N = {
             ko: {
-                auth_titlebar: "SPHERE.IO // 접속 노드",
-                auth_kicker: "월드 접속",
-                auth_pill: "터미널 UI",
-                auth_sub: "화면을 덜 가리는 간결한 오버레이와 명확한 정보 계층.",
                 btn_login: "로그인",
                 btn_register: "회원가입",
                 field_user: "아이디",
@@ -1878,10 +1808,6 @@
                 sys_equip_error_slot_empty: "해제 실패 :: 슬롯이 비어 있습니다.",
             },
             en: {
-                auth_titlebar: "SPHERE.IO // ACCESS NODE",
-                auth_kicker: "WORLD ACCESS",
-                auth_pill: "TERMINAL UI",
-                auth_sub: "Compact overlays with lighter visual weight and clearer hierarchy.",
                 btn_login: "LOGIN",
                 btn_register: "REGISTER",
                 field_user: "USER_ID",
