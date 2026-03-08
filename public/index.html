@@ -362,15 +362,27 @@
             display: none !important;
         }
 
+        #hud>.panel-body,
+        #controls-card>.panel-body,
+        #chat-wrap>.panel-body {
+            margin-top: 6px;
+        }
+
+        #hud.collapsed-shell>.panel-body,
+        #controls-card.collapsed-shell>.panel-body,
+        #chat-wrap.collapsed-shell>.panel-body {
+            margin-top: 0;
+        }
+
         .panel-shell.collapsed-shell {
             gap: 0;
         }
 
         .hud-panel,
-        #controls-card,
         #chat-wrap>.chat-head,
         #chat-log,
         #chat-input-row,
+        #controls-body,
         #logout-btn {
             border: 1px solid var(--border);
             background: var(--panel);
@@ -756,8 +768,9 @@
             z-index: 10;
             display: none;
             width: min(228px, calc(100vw - 24px));
-            padding: 10px;
-            border-radius: 3px;
+            background: none;
+            border: none;
+            box-shadow: none;
         }
 
         .control-title,
@@ -766,6 +779,11 @@
             font-size: 14px;
             font-weight: 700;
             text-transform: uppercase;
+        }
+
+        #controls-body {
+            padding: 10px;
+            border-radius: 3px;
         }
 
         .control-list {
@@ -880,9 +898,12 @@
             padding: 10px;
             border: 1px dashed rgba(17, 17, 17, .16);
             border-radius: 3px;
-            background: rgba(255, 255, 255, .62);
+            background: linear-gradient(180deg, rgba(255, 255, 255, .76), rgba(245, 245, 241, .72));
             color: var(--text);
             text-align: left;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
 
         .craft-slot strong,
@@ -893,6 +914,8 @@
         .craft-slot strong {
             font-size: 12px;
             line-height: 1.45;
+            letter-spacing: .06em;
+            text-transform: uppercase;
         }
 
         .craft-slot span {
@@ -905,6 +928,77 @@
         .craft-plus {
             color: var(--accent);
             font: 700 20px var(--mono);
+        }
+
+        .bestiary-section {
+            margin-top: 12px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(17, 17, 17, .08);
+        }
+
+        .bestiary-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .bestiary-card {
+            padding: 8px;
+            border: 1px solid rgba(17, 17, 17, .08);
+            border-radius: 3px;
+            background: rgba(255, 255, 255, .62);
+        }
+
+        .bestiary-card.locked {
+            opacity: .68;
+        }
+
+        .bestiary-top,
+        .bestiary-copy,
+        .bestiary-rarity {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .bestiary-top {
+            margin-bottom: 4px;
+        }
+
+        .bestiary-name {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .bestiary-state,
+        .bestiary-copy,
+        .bestiary-rarity,
+        .bestiary-empty {
+            color: var(--muted);
+            font-size: 10px;
+            line-height: 1.45;
+        }
+
+        .bestiary-state {
+            flex-shrink: 0;
+            padding: 2px 6px;
+            border: 1px solid rgba(17, 17, 17, .1);
+            border-radius: 999px;
+            background: rgba(17, 17, 17, .04);
+            color: var(--accent);
+        }
+
+        .bestiary-copy+.bestiary-copy,
+        .bestiary-rarity {
+            margin-top: 4px;
+        }
+
+        .bestiary-rarity {
+            border-top: 1px dashed rgba(17, 17, 17, .08);
+            padding-top: 4px;
         }
 
         .craft-meta {
@@ -1162,6 +1256,14 @@
                 width: calc(100vw - 24px);
             }
 
+            .craft-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .craft-plus {
+                justify-self: center;
+            }
+
             .auth-title-row {
                 flex-direction: column;
                 align-items: flex-start;
@@ -1321,6 +1423,13 @@
                     <div class="gear-list" id="inventory-list"></div>
                 </div>
             </div>
+            <div class="bestiary-section">
+                <div class="gear-head">
+                    <span class="hi-label" data-i18n="bestiary_title">BESTIARY</span>
+                    <span class="gear-note" id="bestiary-summary"></span>
+                </div>
+                <div class="bestiary-list" id="bestiary-list"></div>
+            </div>
             <div class="gear-note" data-i18n="hud_penalty">Death can cost XP, a stat point, and one owned item.</div>
         </div>
     </div>
@@ -1334,9 +1443,9 @@
             <button class="panel-toggle" type="button" onclick="toggleCraftPanel(false)">X</button>
         </div>
         <div class="craft-grid">
-            <button class="craft-slot" type="button" id="craft-slot-a" onclick="clearCraftSlot(0)"><strong>[]</strong><span>-</span></button>
+            <button class="craft-slot" type="button" id="craft-slot-a" onclick="clearCraftSlot(0)"><strong>EMPTY SLOT</strong><span>SELECT A MATCHING ITEM</span></button>
             <div class="craft-plus">+</div>
-            <button class="craft-slot" type="button" id="craft-slot-b" onclick="clearCraftSlot(1)"><strong>[]</strong><span>-</span></button>
+            <button class="craft-slot" type="button" id="craft-slot-b" onclick="clearCraftSlot(1)"><strong>EMPTY SLOT</strong><span>SELECT A MATCHING ITEM</span></button>
         </div>
         <div class="craft-meta">
             <span id="craft-chance">SUCCESS 0%</span>
@@ -1589,7 +1698,7 @@
             btn_craft: "조합",
             craft_kicker: "조합",
             craft_title: "합성",
-            craft_empty: "[]",
+            craft_empty: "빈 슬롯",
             craft_slot_hint: "인벤토리에서 같은 장비를 클릭하세요",
             craft_slot_clear: "클릭해서 비우기",
             craft_need_two: "같은 장비와 같은 등급 2개를 넣어야 합니다.",
@@ -1612,13 +1721,22 @@
             sys_craft_error_max_rarity: "조합 실패 :: 이미 최고 등급입니다.",
             sys_craft_success: "조합 성공 :: {item}",
             sys_craft_fail: "조합 실패 :: 재료가 소멸했습니다",
+            bestiary_title: "적 도감",
+            bestiary_summary: "현재 출현표 :: 총 처치 {total}",
+            bestiary_empty: "표시할 적 정보가 없습니다.",
+            bestiary_state_live: "출현 중",
+            bestiary_state_locked: "잠김",
+            bestiary_unlock_initial: "시작 시 바로 출현",
+            bestiary_unlock_progress: "{monster} 처치 {count}/{need}",
+            bestiary_spawn: "출현 {rate}",
+            bestiary_drop: "드랍 {rate}",
         });
 
         Object.assign(I18N.en, {
             btn_craft: "CRAFT",
             craft_kicker: "CRAFT",
             craft_title: "SYNTHESIS",
-            craft_empty: "[]",
+            craft_empty: "EMPTY SLOT",
             craft_slot_hint: "Click matching items in the inventory",
             craft_slot_clear: "Click to clear",
             craft_need_two: "Insert two items with the same name and rarity.",
@@ -1641,6 +1759,15 @@
             sys_craft_error_max_rarity: "CRAFT FAILED :: item is already at max rarity.",
             sys_craft_success: "CRAFT SUCCESS :: {item}",
             sys_craft_fail: "CRAFT FAILED :: materials were destroyed",
+            bestiary_title: "BESTIARY",
+            bestiary_summary: "LIVE TABLE :: TOTAL KILLS {total}",
+            bestiary_empty: "No enemy entries to display.",
+            bestiary_state_live: "ACTIVE",
+            bestiary_state_locked: "LOCKED",
+            bestiary_unlock_initial: "Available from the start",
+            bestiary_unlock_progress: "Kill {monster} {count}/{need}",
+            bestiary_spawn: "SPAWN {rate}",
+            bestiary_drop: "DROP {rate}",
         });
 
         const SLOT_ORDER = ["weapon", "armor", "boots", "gloves", "charm"];
@@ -1657,6 +1784,12 @@
             wind_boots: { ko: "신발", en: "Boots" },
             focus_gloves: { ko: "장갑", en: "Gloves" },
             lucky_charm: { ko: "부적", en: "Charm" },
+        };
+        const MONSTER_META = {
+            dot: { ko: "점", en: "DOT", color: "#ef4444" },
+            line: { ko: "선", en: "LINE", color: "#8b5cf6" },
+            triangle: { ko: "삼각형", en: "TRIANGLE", color: "#f59e0b" },
+            square: { ko: "사각형", en: "SQUARE", color: "#14b8a6" },
         };
         const MAX_RARITY = 10;
         const RARITY_META = {
@@ -1730,6 +1863,8 @@
             elInvCnt = document.getElementById("h-invcount"),
             equipList = document.getElementById("equip-list"),
             inventoryList = document.getElementById("inventory-list"),
+            bestiaryList = document.getElementById("bestiary-list"),
+            bestiarySummary = document.getElementById("bestiary-summary"),
             hudBody = document.getElementById("hud-body"),
             inventoryBody = document.getElementById("inventory-body"),
             controlsBody = document.getElementById("controls-body"),
@@ -2064,6 +2199,15 @@
             return item ? `${rarityName(item.rarity)} ${itemLabel(item)}` : itemLabel(item);
         }
 
+        function monsterName(type) {
+            return MONSTER_META[type]?.[currentLang] || String(type || "unknown").toUpperCase();
+        }
+
+        function percentText(value) {
+            const pct = Math.max(0, Number(value) || 0) * 100;
+            return `${pct >= 10 || pct === 0 ? pct.toFixed(0) : pct.toFixed(1)}%`;
+        }
+
         function gearRowClass(item) {
             return `gear-row slot-${item?.slot || "plain"}`;
         }
@@ -2258,7 +2402,73 @@
                 inventoryLimit: currentSelf?.inventoryLimit || 12,
                 inventory: currentSelf?.inventory || [],
                 equipment: currentSelf?.equipment || {},
+                bestiary: currentSelf?.bestiary || null,
             });
+        }
+
+        function renderBestiary() {
+            const bestiary = currentSelf?.bestiary || null;
+            const entries = Array.isArray(bestiary?.entries) ? bestiary.entries : [];
+            bestiarySummary.textContent = t("bestiary_summary", { total: bestiary?.totalKills || 0 });
+            bestiaryList.innerHTML = "";
+            if (entries.length === 0) {
+                const emptyNode = document.createElement("div");
+                emptyNode.className = "bestiary-empty";
+                emptyNode.textContent = t("bestiary_empty");
+                bestiaryList.appendChild(emptyNode);
+                return;
+            }
+
+            for (const entry of entries) {
+                const card = document.createElement("div");
+                card.className = `bestiary-card${entry.unlocked ? "" : " locked"}`;
+
+                const top = document.createElement("div");
+                top.className = "bestiary-top";
+
+                const nameNode = document.createElement("div");
+                nameNode.className = "bestiary-name";
+                nameNode.textContent = monsterName(entry.type);
+                nameNode.style.color = MONSTER_META[entry.type]?.color || "#101010";
+
+                const stateNode = document.createElement("div");
+                stateNode.className = "bestiary-state";
+                stateNode.textContent = entry.unlocked ? t("bestiary_state_live") : t("bestiary_state_locked");
+
+                top.appendChild(nameNode);
+                top.appendChild(stateNode);
+                card.appendChild(top);
+
+                const statsNode = document.createElement("div");
+                statsNode.className = "bestiary-copy";
+                statsNode.textContent = `HP ${entry.hp} · DMG ${entry.dmg} · XP ${entry.xp}`;
+                card.appendChild(statsNode);
+
+                const chanceNode = document.createElement("div");
+                chanceNode.className = "bestiary-copy";
+                chanceNode.textContent = `${t("bestiary_spawn", { rate: percentText(entry.spawnChance) })} · ${t("bestiary_drop", { rate: percentText(entry.dropChance) })}`;
+                card.appendChild(chanceNode);
+
+                const unlockNode = document.createElement("div");
+                unlockNode.className = "bestiary-copy";
+                unlockNode.textContent = entry.unlockByType
+                    ? t("bestiary_unlock_progress", {
+                        monster: monsterName(entry.unlockByType),
+                        count: Math.min(entry.unlockProgress || 0, entry.unlockKills || 0),
+                        need: entry.unlockKills || 0,
+                    })
+                    : t("bestiary_unlock_initial");
+                card.appendChild(unlockNode);
+
+                const rarityNode = document.createElement("div");
+                rarityNode.className = "bestiary-rarity";
+                rarityNode.textContent = (Array.isArray(entry.rarityTable) ? entry.rarityTable : [])
+                    .map(row => `${rarityName(row.rarity)} ${percentText(row.chance)}`)
+                    .join(" · ");
+                card.appendChild(rarityNode);
+
+                bestiaryList.appendChild(card);
+            }
         }
 
         function renderLoadout(force = false) {
@@ -2328,48 +2538,48 @@
                 emptyNode.className = "gear-empty";
                 emptyNode.textContent = t("inventory_empty");
                 inventoryList.appendChild(emptyNode);
-                return;
+            } else {
+                for (const item of inventory) {
+                    const row = document.createElement("div");
+                    row.className = gearRowClass(item);
+                    if (craftOpen) row.classList.add("craft-pickable");
+                    if (craftSelection.includes(item.id)) row.classList.add("craft-selected");
+
+                    const main = document.createElement("div");
+                    main.className = "gear-main";
+
+                    const nameNode = document.createElement("div");
+                    nameNode.className = "gear-name";
+                    nameNode.textContent = `${itemFullName(item)} [${slotLabel(item.slot)}]`;
+                    main.appendChild(nameNode);
+
+                    const copyNode = document.createElement("div");
+                    copyNode.className = "gear-copy";
+                    copyNode.textContent = formatBonuses(item.bonuses);
+                    main.appendChild(copyNode);
+
+                    const rarityNode = document.createElement("div");
+                    rarityNode.className = "gear-copy rarity-copy";
+                    rarityNode.textContent = `${rarityName(item.rarity)} :: ${rarityFeature(item.rarity)}`;
+                    main.appendChild(rarityNode);
+
+                    const button = document.createElement("button");
+                    button.type = "button";
+                    button.className = "gear-btn";
+                    button.textContent = t("btn_equip");
+                    button.onclick = e => {
+                        e.stopPropagation();
+                        equipItem(item.id);
+                    };
+
+                    row.appendChild(main);
+                    row.appendChild(button);
+                    row.onclick = craftOpen ? () => selectCraftItem(item.id) : null;
+                    applyItemTone(row, item, nameNode);
+                    inventoryList.appendChild(row);
+                }
             }
-
-            for (const item of inventory) {
-                const row = document.createElement("div");
-                row.className = gearRowClass(item);
-                if (craftOpen) row.classList.add("craft-pickable");
-                if (craftSelection.includes(item.id)) row.classList.add("craft-selected");
-
-                const main = document.createElement("div");
-                main.className = "gear-main";
-
-                const nameNode = document.createElement("div");
-                nameNode.className = "gear-name";
-                nameNode.textContent = `${itemFullName(item)} [${slotLabel(item.slot)}]`;
-                main.appendChild(nameNode);
-
-                const copyNode = document.createElement("div");
-                copyNode.className = "gear-copy";
-                copyNode.textContent = formatBonuses(item.bonuses);
-                main.appendChild(copyNode);
-
-                const rarityNode = document.createElement("div");
-                rarityNode.className = "gear-copy rarity-copy";
-                rarityNode.textContent = `${rarityName(item.rarity)} :: ${rarityFeature(item.rarity)}`;
-                main.appendChild(rarityNode);
-
-                const button = document.createElement("button");
-                button.type = "button";
-                button.className = "gear-btn";
-                button.textContent = t("btn_equip");
-                button.onclick = e => {
-                    e.stopPropagation();
-                    equipItem(item.id);
-                };
-
-                row.appendChild(main);
-                row.appendChild(button);
-                row.onclick = craftOpen ? () => selectCraftItem(item.id) : null;
-                applyItemTone(row, item, nameNode);
-                inventoryList.appendChild(row);
-            }
+            renderBestiary();
             renderCraftPanel();
         }
 
@@ -3050,10 +3260,6 @@
                     ctx.lineWidth = 2;
                     ctx.strokeStyle = "#111";
                     ctx.stroke();
-                    ctx.fillStyle = "rgba(255,255,255,.95)";
-                    ctx.beginPath();
-                    ctx.arc(monster.r * .42, 0, Math.max(2, monster.r * .22), 0, Math.PI * 2);
-                    ctx.fill();
                     break;
                 case "line":
                     ctx.rotate(facing);
@@ -3085,12 +3291,6 @@
                     ctx.lineWidth = 2;
                     ctx.fillRect(-monster.r, -monster.r, monster.r * 2, monster.r * 2);
                     ctx.strokeRect(-monster.r, -monster.r, monster.r * 2, monster.r * 2);
-                    ctx.strokeStyle = "rgba(255,255,255,.92)";
-                    ctx.lineWidth = 3;
-                    ctx.beginPath();
-                    ctx.moveTo(monster.r * .2, 0);
-                    ctx.lineTo(monster.r * .72, 0);
-                    ctx.stroke();
                     break;
             }
             ctx.restore();
