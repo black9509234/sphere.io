@@ -553,12 +553,20 @@
             localStorage.setItem(WINDOW_LAYOUT_KEY, JSON.stringify(windowLayout));
         }
 
+        function currentUiScale() {
+            return UI_SCALE_MAP[uiScaleMode] || 1;
+        }
+
         function clampWindowPosition(element, left, top) {
-            const margin = 8;
-            const width = element.offsetWidth || element.getBoundingClientRect().width || 0;
-            const height = element.offsetHeight || element.getBoundingClientRect().height || 0;
-            const maxLeft = Math.max(margin, window.innerWidth - width - margin);
-            const maxTop = Math.max(margin, window.innerHeight - height - margin);
+            const scale = currentUiScale();
+            const margin = 8 / scale;
+            const rect = element.getBoundingClientRect();
+            const width = element.offsetWidth || rect.width / scale || 0;
+            const height = element.offsetHeight || rect.height / scale || 0;
+            const viewportWidth = window.innerWidth / scale;
+            const viewportHeight = window.innerHeight / scale;
+            const maxLeft = Math.max(margin, viewportWidth - width - margin);
+            const maxTop = Math.max(margin, viewportHeight - height - margin);
             return {
                 left: Math.min(Math.max(margin, left), maxLeft),
                 top: Math.min(Math.max(margin, top), maxTop),
@@ -583,27 +591,32 @@
         }
 
         function defaultWindowPosition(name, element) {
-            const width = element.offsetWidth || element.getBoundingClientRect().width || 0;
-            const height = element.offsetHeight || element.getBoundingClientRect().height || 0;
+            const scale = currentUiScale();
+            const rect = element.getBoundingClientRect();
+            const width = element.offsetWidth || rect.width / scale || 0;
+            const height = element.offsetHeight || rect.height / scale || 0;
+            const viewportWidth = window.innerWidth / scale;
+            const viewportHeight = window.innerHeight / scale;
+            const margin = 12 / scale;
             switch (name) {
                 case "hud":
-                    return { left: 12, top: 12 };
+                    return { left: margin, top: margin };
                 case "settings":
-                    return { left: window.innerWidth - width - 12, top: 48 };
+                    return { left: viewportWidth - width - margin, top: 48 / scale };
                 case "inventory":
-                    return { left: window.innerWidth - width - 12, top: 120 };
+                    return { left: viewportWidth - width - margin, top: 120 / scale };
                 case "bestiary":
-                    return { left: window.innerWidth - width - 12, top: 120 };
+                    return { left: viewportWidth - width - margin, top: 120 / scale };
                 case "craft":
-                    return { left: (window.innerWidth - width) / 2, top: window.innerHeight - height - 60 };
+                    return { left: (viewportWidth - width) / 2, top: viewportHeight - height - (60 / scale) };
                 case "controls":
-                    return { left: 12, top: window.innerHeight - height - 12 };
+                    return { left: margin, top: viewportHeight - height - margin };
                 case "chat":
-                    return { left: window.innerWidth - width - 12, top: window.innerHeight - height - 12 };
+                    return { left: viewportWidth - width - margin, top: viewportHeight - height - margin };
                 case "tutorial":
-                    return { left: (window.innerWidth - width) / 2, top: 28 };
+                    return { left: (viewportWidth - width) / 2, top: 28 / scale };
                 default:
-                    return { left: 12, top: 12 };
+                    return { left: margin, top: margin };
             }
         }
 
@@ -649,14 +662,16 @@
                 if (getComputedStyle(element).display === "none") return;
                 ensureWindowPosition(name);
                 bringWindowToFront(element);
-                const rect = element.getBoundingClientRect();
+                const scale = currentUiScale();
+                const currentLeft = Number.parseFloat(element.style.left);
+                const currentTop = Number.parseFloat(element.style.top);
                 activeWindowDrag = {
                     name,
                     element,
                     startClientX: event.clientX,
                     startClientY: event.clientY,
-                    startLeft: rect.left,
-                    startTop: rect.top,
+                    startLeft: Number.isFinite(currentLeft) ? currentLeft : element.getBoundingClientRect().left / scale,
+                    startTop: Number.isFinite(currentTop) ? currentTop : element.getBoundingClientRect().top / scale,
                 };
                 element.classList.add("dragging-window");
                 document.documentElement.classList.add("ui-dragging");
@@ -674,11 +689,12 @@
 
         document.addEventListener("pointermove", event => {
             if (!activeWindowDrag) return;
+            const scale = currentUiScale();
             const { name, element, startClientX, startClientY, startLeft, startTop } = activeWindowDrag;
             const pos = applyFloatingPosition(
                 element,
-                startLeft + (event.clientX - startClientX),
-                startTop + (event.clientY - startClientY)
+                startLeft + ((event.clientX - startClientX) / scale),
+                startTop + ((event.clientY - startClientY) / scale)
             );
             windowLayout[name] = pos;
         });
