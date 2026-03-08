@@ -25,6 +25,7 @@
                 hud_stats: "능력치",
                 btn_disconnect: "연결 종료",
                 btn_settings: "설정",
+                settings_reset_ui: "UI 위치 초기화",
                 btn_bestiary: "도감",
                 controls_kicker: "조작",
                 controls_title: "키맵",
@@ -123,6 +124,7 @@
                 hud_stats: "STATS",
                 btn_disconnect: "DISCONNECT",
                 btn_settings: "SETTINGS",
+                settings_reset_ui: "RESET UI",
                 btn_bestiary: "BESTIARY",
                 controls_kicker: "CONTROLS",
                 controls_title: "KEYMAP",
@@ -569,35 +571,69 @@
             element.style.zIndex = String(nextWindowZ);
         }
 
-        function primeFloatingWindow(element) {
-            if (!element || element.dataset.floatReady === "1") return;
-            const rect = element.getBoundingClientRect();
-            element.style.left = `${rect.left}px`;
-            element.style.top = `${rect.top}px`;
-            element.style.right = "auto";
-            element.style.bottom = "auto";
-            element.style.transform = "none";
-            element.dataset.floatReady = "1";
-        }
-
-        function applyWindowLayoutPosition(name) {
-            const element = draggableWindows[name];
-            const saved = windowLayout[name];
-            if (!element || !saved) return;
-            primeFloatingWindow(element);
-            const pos = clampWindowPosition(element, saved.left, saved.top);
+        function applyFloatingPosition(element, left, top) {
+            const pos = clampWindowPosition(element, left, top);
             element.style.left = `${pos.left}px`;
             element.style.top = `${pos.top}px`;
             element.style.right = "auto";
             element.style.bottom = "auto";
             element.style.transform = "none";
+            element.dataset.floatReady = "1";
+            return pos;
+        }
+
+        function defaultWindowPosition(name, element) {
+            const width = element.offsetWidth || element.getBoundingClientRect().width || 0;
+            const height = element.offsetHeight || element.getBoundingClientRect().height || 0;
+            switch (name) {
+                case "hud":
+                    return { left: 12, top: 12 };
+                case "settings":
+                    return { left: window.innerWidth - width - 12, top: 48 };
+                case "inventory":
+                    return { left: window.innerWidth - width - 12, top: 120 };
+                case "bestiary":
+                    return { left: window.innerWidth - width - 12, top: 120 };
+                case "craft":
+                    return { left: (window.innerWidth - width) / 2, top: window.innerHeight - height - 60 };
+                case "controls":
+                    return { left: 12, top: window.innerHeight - height - 12 };
+                case "chat":
+                    return { left: window.innerWidth - width - 12, top: window.innerHeight - height - 12 };
+                case "tutorial":
+                    return { left: (window.innerWidth - width) / 2, top: 28 };
+                default:
+                    return { left: 12, top: 12 };
+            }
+        }
+
+        function ensureWindowPosition(name) {
+            const element = draggableWindows[name];
+            const saved = windowLayout[name];
+            if (!element) return;
+            const source = saved || defaultWindowPosition(name, element);
+            const pos = applyFloatingPosition(element, source.left, source.top);
+            windowLayout[name] = pos;
         }
 
         function activateWindow(name) {
             const element = draggableWindows[name];
             if (!element) return;
-            applyWindowLayoutPosition(name);
+            ensureWindowPosition(name);
             bringWindowToFront(element);
+        }
+
+        function resetWindowLayout() {
+            windowLayout = {};
+            localStorage.removeItem(WINDOW_LAYOUT_KEY);
+            Object.entries(draggableWindows).forEach(([name, element]) => {
+                if (!element) return;
+                delete element.dataset.floatReady;
+                if (getComputedStyle(element).display !== "none") {
+                    ensureWindowPosition(name);
+                    bringWindowToFront(element);
+                }
+            });
         }
 
         function registerDraggableWindow(name, element) {
@@ -611,7 +647,7 @@
                 if (event.button !== 0) return;
                 if (event.target.closest(ignoreSelector)) return;
                 if (getComputedStyle(element).display === "none") return;
-                primeFloatingWindow(element);
+                ensureWindowPosition(name);
                 bringWindowToFront(element);
                 const rect = element.getBoundingClientRect();
                 activeWindowDrag = {
@@ -639,16 +675,11 @@
         document.addEventListener("pointermove", event => {
             if (!activeWindowDrag) return;
             const { name, element, startClientX, startClientY, startLeft, startTop } = activeWindowDrag;
-            const pos = clampWindowPosition(
+            const pos = applyFloatingPosition(
                 element,
                 startLeft + (event.clientX - startClientX),
                 startTop + (event.clientY - startClientY)
             );
-            element.style.left = `${pos.left}px`;
-            element.style.top = `${pos.top}px`;
-            element.style.right = "auto";
-            element.style.bottom = "auto";
-            element.style.transform = "none";
             windowLayout[name] = pos;
         });
 
@@ -669,8 +700,7 @@
                 windowLayout[name] = pos;
                 changed = true;
                 if (element.dataset.floatReady === "1") {
-                    element.style.left = `${pos.left}px`;
-                    element.style.top = `${pos.top}px`;
+                    applyFloatingPosition(element, pos.left, pos.top);
                 }
             });
             if (changed) saveWindowLayout();
