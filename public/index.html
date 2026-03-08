@@ -31,6 +31,8 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
         }
 
         html,
@@ -69,6 +71,11 @@
         button,
         input {
             font: inherit;
+        }
+
+        input {
+            user-select: text;
+            -webkit-user-select: text;
         }
 
         button {
@@ -2005,15 +2012,25 @@
                 const next = nextMap[id];
                 const current = renderMap[id];
                 if (!current) {
-                    renderMap[id] = { ...next, x: next.x, y: next.y, tx: next.x, ty: next.y };
+                    renderMap[id] = {
+                        ...next,
+                        x: next.x,
+                        y: next.y,
+                        tx: next.x,
+                        ty: next.y,
+                        angle: typeof next.facing === "number" ? next.facing : 0,
+                        ta: typeof next.facing === "number" ? next.facing : 0,
+                    };
                     continue;
                 }
                 const jumped = Math.hypot(next.x - current.x, next.y - current.y) > snapDistance;
                 current.tx = next.x;
                 current.ty = next.y;
+                if (typeof next.facing === "number") current.ta = next.facing;
                 if (jumped) {
                     current.x = next.x;
                     current.y = next.y;
+                    if (typeof current.ta === "number") current.angle = current.ta;
                 }
                 for (const key in next) {
                     if (key !== "x" && key !== "y") current[key] = next[key];
@@ -2021,11 +2038,22 @@
             }
         }
 
+        function angleDelta(from, to) {
+            let delta = to - from;
+            while (delta > Math.PI) delta -= Math.PI * 2;
+            while (delta < -Math.PI) delta += Math.PI * 2;
+            return delta;
+        }
+
         function stepRenderEntities(renderMap, dt, speed) {
             const blend = 1 - Math.exp(-speed * dt);
             for (const entity of Object.values(renderMap)) {
                 entity.x += (entity.tx - entity.x) * blend;
                 entity.y += (entity.ty - entity.y) * blend;
+                if (typeof entity.ta === "number") {
+                    const base = typeof entity.angle === "number" ? entity.angle : entity.ta;
+                    entity.angle = base + angleDelta(base, entity.ta) * blend;
+                }
             }
         }
 
@@ -2514,10 +2542,12 @@
             const sx = monster.x - camX,
                 sy = monster.y - camY;
             if (sx < -100 || sx > viewW + 100 || sy < -100 || sy > viewH + 100) return;
+            const facing = typeof monster.angle === "number" ? monster.angle : (typeof monster.facing === "number" ? monster.facing : 0);
             ctx.save();
             ctx.translate(sx, sy);
             switch (monster.type) {
                 case "dot":
+                    ctx.rotate(facing);
                     ctx.fillStyle = monster.color;
                     ctx.beginPath();
                     ctx.arc(0, 0, monster.r, 0, Math.PI * 2);
@@ -2525,9 +2555,13 @@
                     ctx.lineWidth = 2;
                     ctx.strokeStyle = "#111";
                     ctx.stroke();
+                    ctx.fillStyle = "rgba(255,255,255,.95)";
+                    ctx.beginPath();
+                    ctx.arc(monster.r * .42, 0, Math.max(2, monster.r * .22), 0, Math.PI * 2);
+                    ctx.fill();
                     break;
                 case "line":
-                    ctx.rotate((performance.now() * .0035) % (Math.PI * 2));
+                    ctx.rotate(facing);
                     ctx.strokeStyle = monster.color;
                     ctx.lineWidth = 4;
                     ctx.lineCap = "square";
@@ -2537,13 +2571,11 @@
                     ctx.stroke();
                     break;
                 case "triangle":
+                    ctx.rotate(facing);
                     ctx.beginPath();
-                    for (let i = 0; i < 3; i++) {
-                        const a = i / 3 * Math.PI * 2 - Math.PI / 2,
-                            px = Math.cos(a) * monster.r,
-                            py = Math.sin(a) * monster.r;
-                        i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
-                    }
+                    ctx.moveTo(monster.r, 0);
+                    ctx.lineTo(-monster.r * .8, monster.r * .76);
+                    ctx.lineTo(-monster.r * .8, -monster.r * .76);
                     ctx.closePath();
                     ctx.fillStyle = monster.color;
                     ctx.strokeStyle = "#2a2a2a";
@@ -2552,11 +2584,18 @@
                     ctx.stroke();
                     break;
                 case "square":
+                    ctx.rotate(facing);
                     ctx.fillStyle = monster.color;
                     ctx.strokeStyle = "#2a2a2a";
                     ctx.lineWidth = 2;
                     ctx.fillRect(-monster.r, -monster.r, monster.r * 2, monster.r * 2);
                     ctx.strokeRect(-monster.r, -monster.r, monster.r * 2, monster.r * 2);
+                    ctx.strokeStyle = "rgba(255,255,255,.92)";
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.moveTo(monster.r * .2, 0);
+                    ctx.lineTo(monster.r * .72, 0);
+                    ctx.stroke();
                     break;
             }
             ctx.restore();

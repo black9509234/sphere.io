@@ -536,6 +536,7 @@ function spawnMonster(mapId = DEFAULT_MAP_ID) {
     atkCD: def.atkCD,
     tx: wander.tx,
     ty: wander.ty,
+    facing: Math.atan2(wander.ty - pos.y, wander.tx - pos.x),
     lastAttack: {},
     aggroTarget: null,
   };
@@ -686,6 +687,7 @@ setInterval(() => {
       const dx = nearest.x - m.x;
       const dy = nearest.y - m.y;
       const d = Math.hypot(dx, dy) || 1;
+      m.facing = Math.atan2(dy, dx);
       m.x += (dx / d) * m.speed;
       m.y += (dy / d) * m.speed;
 
@@ -725,7 +727,9 @@ setInterval(() => {
         const wander = randomWander(m.x, m.y);
         m.tx = wander.tx;
         m.ty = wander.ty;
+        m.facing = Math.atan2(wander.ty - m.y, wander.tx - m.x);
       } else {
+        m.facing = Math.atan2(dy, dx);
         m.x += (dx / d) * m.speed * 0.5;
         m.y += (dy / d) * m.speed * 0.5;
       }
@@ -759,6 +763,7 @@ setInterval(() => {
     mapId: m.mapId,
     x: m.x,
     y: m.y,
+    facing: m.facing,
     type: m.type,
     r: m.r,
     hp: m.hp,
